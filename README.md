@@ -1,1 +1,195 @@
-# travel-planner-bih
+# Travel Planner — Bosna i Hercegovina Edition
+
+Full-stack platforma za planiranje putovanja fokusirana na Bosnu i Hercegovinu.
+Otkrivanje destinacija, planiranje itinerera dan-po-dan, interaktivna mapa sa
+rutama, budžetiranje u KM/EUR, i AI asistent koji koristi tool-calling nad
+stvarnim, kuriranim BiH podacima.
+
+> Ovo je namjerno sužena, BiH-only verzija globalnog Travel Planner koncepta —
+> ne umanjena verzija vizije, nego pametan prvi korak: izvodljiva za solo
+> juniora u 4-8 sedmica, sa potpuno besplatnim skupom provajdera, koristeći
+> istu arhitekturu na koju se kasnije regionalno proširuje.
+
+## Sadržaj
+
+- [Zašto BiH kao prvo tržište](#zašto-bih-kao-prvo-tržište)
+- [Funkcionalnosti](#funkcionalnosti)
+- [Tehnološki stack](#tehnološki-stack)
+- [Arhitektura](#arhitektura)
+- [Eksterne integracije](#eksterne-integracije-sve-besplatno-za-mvp)
+- [Pokretanje projekta](#pokretanje-projekta)
+- [Roadmap](#roadmap)
+- [Definicija završenosti](#definicija-završenosti-mvp)
+- [Monetizacija (buduća faza)](#monetizacija-buduća-faza)
+
+## Zašto BiH kao prvo tržište
+
+Umjesto globalnog obima, MVP se namjerno ograničava na jednu zemlju: manje
+podataka za kuriranje, manje edge-case-ova, realniji rok za solo developera,
+i jasan, demonstrabilan proizvod za portfolio i tehnički intervju — uz punu
+mogućnost proširenja na regiju (Hrvatska, Srbija, Crna Gora) kasnije, koristeći
+istu arhitekturu.
+
+**Ciljani korisnici**: domaći turisti, dijaspora, regionalni posjetioci
+(Hrvatska, Srbija, Crna Gora), strani turisti, grupe koje dijele troškove.
+
+**Geografski obim MVP-a**: Sarajevo, Mostar, Trebinje i Hercegovina, Neum,
+Jahorina i Bjelašnica, Banja Luka, Travnik/Počitelj/Višegrad/Jajce. Ostatak
+zemlje dostupan generički kroz Mapbox/OSM bez kuriranog sadržaja.
+
+## Funkcionalnosti
+
+| Oblast | Opis | Faza |
+|---|---|---|
+| Identity | Registracija, prijava, profil, preferencije | MVP |
+| Discover | Preporuke destinacija ograničene na BiH | MVP |
+| Places | Restorani, atrakcije (OSM + ručna dopuna) | MVP |
+| Maps | Mapbox prikaz, rute, udaljenosti unutar BiH | MVP |
+| Trips | Kreiranje putovanja, datumi, putnici, itinerer | MVP |
+| Itinerary | Dani, aktivnosti, ručno uređivanje, prikaz rute | MVP |
+| Weather | Open-Meteo prognoza za sve BiH lokacije | MVP |
+| Budget | Procjena i praćenje troškova u KM/EUR | MVP |
+| AI asistent | Tool-calling nad kuriranim BiH podacima | MVP |
+| Smještaj | Ručno kuriran dataset (20-40 objekata) | MVP (API u V2) |
+| Saradnja | Pozivanje saputnika, komentari, glasanje | V2 |
+| Aktivnosti/ture | Kurirane preporuke (rafting, ture) | V2 |
+| Letovi | Van obima — BiH ima samo 3 aerodroma | V3 |
+| Mobile | Android/iOS | V4 |
+
+## Tehnološki stack
+
+| Sloj | Tehnologija |
+|---|---|
+| Web | Next.js + TypeScript |
+| UI | React + Tailwind CSS |
+| Backend | ASP.NET Core / C# |
+| ORM/DB | EF Core + PostgreSQL + PostGIS |
+| Cache/Realtime | Redis / SignalR *(odloženo za V2)* |
+| Maps | Mapbox |
+| Places | OpenStreetMap (Overpass API) |
+| Weather | Open-Meteo |
+| AI | Anthropic ili OpenAI API |
+| Deployment | Vercel + Render/Railway + Supabase/Neon |
+
+## Arhitektura
+
+Modularni monolit — namjerno, ne mikroservisi. Manji obim podataka (samo BiH)
+dodatno smanjuje potrebu za ranim raspadom na servise.
+
+```
+┌──────────────────────┐
+│     Next.js Web       │
+│  React + TypeScript   │
+└───────────┬───────────┘
+            │ HTTPS / JSON
+┌───────────▼───────────┐
+│   ASP.NET Core API     │
+│          C#            │
+└───────────┬───────────┘
+            │
+PostgreSQL (+ PostGIS)      Redis (opciono, V2)
+            │
+├── Users / Trips / Itineraries
+├── BiH Destinations / Places (kurirano + OSM)
+└── AI conversation log
+```
+
+Svi eksterni provajderi stoje iza interfejsa (provider abstraction pattern),
+lako zamjenjivi za plaćenu alternativu kad projekat generiše prihod.
+
+## Eksterne integracije (sve besplatno za MVP)
+
+| Kategorija | Provajder | Zašto |
+|---|---|---|
+| Mape/rute | Mapbox | 50k map loads + 100k geocoding/directions/mjesec besplatno, bez kartice |
+| Mjesta | OpenStreetMap / Overpass | Potpuno besplatno, bez ključa, solidna pokrivenost za veće gradove |
+| Vrijeme | Open-Meteo | Potpuno besplatno, bez ključa, 10k poziva/dan |
+| Smještaj | Ručno kuriran dataset | Amadeus/Kiwi self-service ugašeni 2026 — kuriranje je realna opcija |
+| AI | Anthropic ili OpenAI API | Pay-as-you-go, minimalni trošak na MVP obimu |
+
+**Ukupan mjesečni trošak infrastrukture: $0-5** dok projekat ne generiše
+saobraćaj koji zahtijeva plaćene planove.
+
+## Pokretanje projekta
+
+```bash
+# Kloniraj repo
+git clone <repo-url>
+cd travel-planner-bih
+
+# Podigni lokalno okruženje (Postgres + PostGIS)
+docker compose up -d
+
+# Backend
+cd api
+dotnet restore
+dotnet ef database update
+dotnet run
+
+# Frontend (u novom terminalu)
+cd web
+npm install
+npm run dev
+```
+
+Environment varijable (API ključevi za Mapbox, AI provajder, connection
+string) idu u `.env` fajlove koji **nisu** u Git-u — vidi `.env.example` u
+svakom folderu za potrebne varijable.
+
+## Roadmap
+
+Solo developer, realno 4-8 sedmica intenzivnog rada.
+
+### Sedmica 1-2 — Temelj
+- [ ] Next.js + ASP.NET Core setup, Docker lokalno okruženje
+- [ ] PostgreSQL + PostGIS, osnovne migracije
+- [ ] Autentifikacija i korisnički profil
+- [ ] Seed podataka: 10-15 BiH destinacija, osnovni opisi
+
+### Sedmica 3-4 — Discovery i mape
+- [ ] Wizard preferencija i jednostavan scoring
+- [ ] Stranice destinacija sa Mapbox mapom
+- [ ] OpenStreetMap/Overpass integracija za mjesta
+- [ ] Open-Meteo integracija za vrijeme
+
+### Sedmica 5-6 — Trip planner
+- [ ] Trip CRUD, dani, stavke itinerera
+- [ ] Budžet u KM
+- [ ] Ručno kuriran accommodation dataset (20-40 smještaja)
+- [ ] Responzivan UI
+
+### Sedmica 7-8 — AI asistent i poliranje
+- [ ] AI provider integracija, definisanje alata (tools)
+- [ ] Tool-calling flow za preporuke i izmjene itinerera
+- [ ] Testovi (unit + E2E za kritične tokove)
+- [ ] Deployment (Vercel + Render/Railway + Supabase/Neon)
+- [ ] README, screenshot-ovi, demo video za portfolio
+
+### Poslije MVP-a (prirodni nastavak)
+- [ ] Saradnja u realnom vremenu (V2 — SignalR)
+- [ ] API integracija za hotele (V2)
+- [ ] Regionalno proširenje: Hrvatska, Srbija, Crna Gora (ista arhitektura)
+
+## Definicija završenosti (MVP)
+
+- Korisnik se može registrovati i podesiti preferencije
+- Sistem preporučuje BiH destinacije sa objašnjenjem
+- Korisnik može otvoriti stranicu destinacije sa mapom i mjestima
+- Korisnik može kreirati putovanje i itinerer dan-po-dan
+- Rute i udaljenosti između gradova su prikazane na mapi
+- Vremenska prognoza je dostupna za odabrane datume/lokacije
+- Korisnik može pratiti budžet u KM
+- AI asistent može predložiti i izmijeniti itinerer koristeći stvarne BiH podatke
+- Aplikacija radi produkcijski (deployed), uz minimalne troškove
+- README i demo materijal jasno pokazuju BiH fokus kao svjesnu odluku
+
+## Monetizacija (buduća faza)
+
+- Freemium model prilagođen BiH kupovnoj moći (5-10 KM/mjesečno Premium)
+- Affiliate saradnja sa domaćim hotelima/pansionima i turističkim agencijama
+- Sponzorisane preporuke restorana/tura, jasno označene
+- Saradnja sa turističkim zajednicama gradova (Sarajevo, Mostar, Trebinje)
+
+---
+
+*Radni dokument • 2026 • Izveden iz globalne specifikacije Travel Planner projekta.*

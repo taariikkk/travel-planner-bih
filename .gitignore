@@ -1,0 +1,12 @@
+# Node
+web/node_modules/
+web/.next/
+web/.env.local
+
+# .NET
+api/bin/
+api/obj/
+api/appsettings.Development.json
+
+# Docker
+pgdata/
