@@ -138,37 +138,20 @@ svakom folderu za potrebne varijable.
 
 ## Roadmap
 
-Solo developer, realno 4-8 sedmica intenzivnog rada.
+Solo developer, realno 4-8 sedmica intenzivnog rada. Detaljan, granularan
+checklist po zadacima (dovoljno mali da svaki bude jedan Codex prompt) vodi
+se u [`ROADMAP.md`](./ROADMAP.md) — taj fajl se ažurira skoro svakodnevno
+dok README ostaje stabilan pregled projekta.
 
-### Sedmica 1-2 — Temelj
-- [ ] Next.js + ASP.NET Core setup, Docker lokalno okruženje
-- [ ] PostgreSQL + PostGIS, osnovne migracije
-- [ ] Autentifikacija i korisnički profil
-- [ ] Seed podataka: 10-15 BiH destinacija, osnovni opisi
+Grubi pregled po sedmicama:
 
-### Sedmica 3-4 — Discovery i mape
-- [ ] Wizard preferencija i jednostavan scoring
-- [ ] Stranice destinacija sa Mapbox mapom
-- [ ] OpenStreetMap/Overpass integracija za mjesta
-- [ ] Open-Meteo integracija za vrijeme
-
-### Sedmica 5-6 — Trip planner
-- [ ] Trip CRUD, dani, stavke itinerera
-- [ ] Budžet u KM
-- [ ] Ručno kuriran accommodation dataset (20-40 smještaja)
-- [ ] Responzivan UI
-
-### Sedmica 7-8 — AI asistent i poliranje
-- [ ] AI provider integracija, definisanje alata (tools)
-- [ ] Tool-calling flow za preporuke i izmjene itinerera
-- [ ] Testovi (unit + E2E za kritične tokove)
-- [ ] Deployment (Vercel + Render/Railway + Supabase/Neon)
-- [ ] README, screenshot-ovi, demo video za portfolio
-
-### Poslije MVP-a (prirodni nastavak)
-- [ ] Saradnja u realnom vremenu (V2 — SignalR)
-- [ ] API integracija za hotele (V2)
-- [ ] Regionalno proširenje: Hrvatska, Srbija, Crna Gora (ista arhitektura)
+| Period | Fokus |
+|---|---|
+| Sedmica 1-2 | Temelj — setup, baza, autentifikacija, seed podaci |
+| Sedmica 3-4 | Discovery i mape — wizard, preporuke, mjesta, vrijeme |
+| Sedmica 5-6 | Trip planner — itinerer, budžet, smještaj |
+| Sedmica 7-8 | AI asistent, testovi, deployment, portfolio materijal |
+| Poslije MVP-a | Saradnja (V2), hotel API, regionalno proširenje |
 
 ## Definicija završenosti (MVP)
 
