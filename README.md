@@ -123,8 +123,8 @@ docker compose up -d
 # Backend
 cd api
 dotnet restore
-dotnet ef database update
-dotnet run
+dotnet ef database update --project TravelPlanner.Infrastructure --startup-project TravelPlanner.WebAPI -- --environment Development
+dotnet run --project TravelPlanner.WebAPI
 
 # Frontend (u novom terminalu)
 cd web
@@ -135,6 +135,24 @@ npm run dev
 Environment varijable (API ključevi za Mapbox, AI provajder, connection
 string) idu u `.env` fajlove koji **nisu** u Git-u — vidi `.env.example` u
 svakom folderu za potrebne varijable.
+
+Backend solution `api/TravelPlanner.sln` sadrži četiri projekta:
+
+- `TravelPlanner.Domain`: entiteti; bez EF Core-a, JWT-a i HTTP-a.
+- `TravelPlanner.Application`: `DTOs`, `Interfaces`, `Services` i `Exceptions`; zavisi od Domain sloja.
+- `TravelPlanner.Infrastructure`: `Persistence/Migrations`, `Repositories`, `Security`; implementira Application interfejse.
+- `TravelPlanner.WebAPI`: `Program.cs`, `Endpoints`, `Properties`, konfiguracija, Swagger i CORS.
+
+Lokalna konfiguracija je u ignorisanom
+`api/TravelPlanner.WebAPI/appsettings.Development.json`. U produkciji postaviti
+`ConnectionStrings__DefaultConnection` i `Jwt__Key` kroz environment varijable.
+.NET ne učitava `.env` automatski.
+
+Testovi: `dotnet test api/TravelPlanner.sln`.
+EF migracije ostaju sadržajno nepromijenjene. Namespace-ovi postojećih entiteta
+i konteksta zadržani su radi kompatibilnosti EF snapshot-a.
+`NetTopologySuite.Point` ostaje geometrijski tip u Domain sloju;
+PostGIS/EF konfiguracija je u Infrastructure sloju.
 
 ## Roadmap
 

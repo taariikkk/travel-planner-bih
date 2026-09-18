@@ -18,18 +18,18 @@ Redoslijed unutar sedmice je preporučen, ali ne strogo obavezan — neki zadaci
 - [ ] `.env.example` i `appsettings.Development.json.example` šabloni (bez pravih vrijednosti) commitovani
 
 ### Baza podataka i EF Core
-- [ ] `ApplicationDbContext` povezan na PostgreSQL
-- [ ] `User` entitet (Id, Email, PasswordHash, DisplayName, CreatedAt, Preferences)
-- [ ] `Destination` entitet (Id, Name, Region, Description, BestTimeToVisit, Tags[])
-- [ ] `Place` entitet (Id, DestinationId, Name, Category, Location [PostGIS point], Source [OSM/manual])
-- [ ] `Trip` entitet (Id, UserId, Title, StartDate, EndDate, Travelers)
-- [ ] `TripDay` entitet (Id, TripId, DayNumber, Date)
-- [ ] `ItineraryItem` entitet (Id, TripDayId, PlaceId, Order, Notes)
-- [ ] `Expense` entitet (Id, TripId, Category, AmountKM, Description)
-- [ ] `Accommodation` entitet (Id, DestinationId, Name, Type, PricePerNightKM, ContactLink)
-- [ ] `WeatherSnapshot` entitet (Id, DestinationId, FetchedAt, RawData)
-- [ ] Prva migracija (`dotnet ef migrations add InitialCreate`) i primjena na lokalnu bazu
-- [ ] PostGIS ekstenzija uključena u migraciji (`CREATE EXTENSION IF NOT EXISTS postgis`)
+- [x] `ApplicationDbContext` povezan na PostgreSQL
+- [x] `User` entitet (Id, Email, PasswordHash, DisplayName, CreatedAt, Preferences)
+- [x] `Destination` entitet (Id, Name, Region, Description, BestTimeToVisit, Tags[])
+- [x] `Place` entitet (Id, DestinationId, Name, Category, Location [PostGIS point], Source [OSM/manual])
+- [x] `Trip` entitet (Id, UserId, Title, StartDate, EndDate, Travelers)
+- [x] `TripDay` entitet (Id, TripId, DayNumber, Date)
+- [x] `ItineraryItem` entitet (Id, TripDayId, PlaceId, Order, Notes)
+- [x] `Expense` entitet (Id, TripId, Category, AmountKM, Description)
+- [x] `Accommodation` entitet (Id, DestinationId, Name, Type, PricePerNightKM, ContactLink)
+- [x] `WeatherSnapshot` entitet (Id, DestinationId, FetchedAt, RawData)
+- [x] Prva migracija (`dotnet ef migrations add InitialCreate`) i primjena na lokalnu bazu
+- [x] PostGIS ekstenzija uključena u migraciji (`CREATE EXTENSION IF NOT EXISTS postgis`)
 
 ### Autentifikacija
 - [ ] Registracija endpoint (`POST /api/auth/register`) — hash lozinke (bcrypt/Argon2)
