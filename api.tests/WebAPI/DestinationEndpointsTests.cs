@@ -74,13 +74,20 @@ public sealed class DestinationEndpointsTests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await RegisterAsync(client));
 
         var invalid = await client.PostAsJsonAsync("/api/destinations/recommend", new { budgetTier = "standard", travelDays = 15, season = "summer", language = "bs" });
+        var missingLanguage = await client.PostAsJsonAsync("/api/destinations/recommend", new { budgetTier = "standard", travelDays = 3, season = "summer", language = (string?)null });
         var response = await client.PostAsJsonAsync("/api/destinations/recommend", new { budgetTier = "standard", travelDays = 3, season = "summer", language = "en" });
         using var results = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, missingLanguage.StatusCode);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(5, results.RootElement.GetArrayLength());
         Assert.Equal("English description", results.RootElement[0].GetProperty("description").GetString());
+        var reasons = results.RootElement[0].GetProperty("reasons");
+        Assert.Empty(reasons.GetProperty("matchingTags").EnumerateArray());
+        Assert.True(reasons.GetProperty("matchesSeason").GetBoolean());
+        Assert.True(reasons.GetProperty("matchesBudget").GetBoolean());
+        Assert.True(reasons.GetProperty("matchesDuration").GetBoolean());
     }
 
     private static async Task<string> RegisterAsync(HttpClient client)

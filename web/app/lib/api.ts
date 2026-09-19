@@ -19,7 +19,14 @@ export type Recommendation = {
   bestTimeToVisit: string;
   tags: string[];
   score: number;
-  reason: string;
+  reasons: RecommendationReasons;
+};
+
+export type RecommendationReasons = {
+  matchingTags: string[];
+  matchesSeason: boolean;
+  matchesBudget: boolean;
+  matchesDuration: boolean;
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5215";

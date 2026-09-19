@@ -24,9 +24,10 @@ public static class DestinationEndpoints
         return destination is null ? Results.NotFound() : Results.Ok(destination);
     }
 
-    private static async Task<IResult> RecommendAsync(RecommendationRequest request, ClaimsPrincipal principal, IRecommendationService recommendations, CancellationToken cancellationToken)
+    private static async Task<IResult> RecommendAsync(RecommendationRequest? request, ClaimsPrincipal principal, IRecommendationService recommendations, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("sub"), out var userId)) return Results.Unauthorized();
+        if (request is null) return Results.BadRequest(new { message = "Recommendation request is required." });
         try
         {
             var result = await recommendations.RecommendAsync(userId, request, cancellationToken);

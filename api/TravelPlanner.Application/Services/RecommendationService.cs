@@ -18,12 +18,16 @@ public sealed class RecommendationService(IUserRepository users, IDestinationRep
         if (user is null) return null;
 
         var language = request.Language.Trim().ToLowerInvariant();
-        var preferences = user.Preferences.Select(preference => preference.Trim().ToLowerInvariant()).ToHashSet();
+        var preferences = user.Preferences
+            .Where(preference => !string.IsNullOrWhiteSpace(preference))
+            .Select(preference => preference.Trim().ToLowerInvariant())
+            .ToHashSet();
         var scored = (await destinations.GetAllWithTranslationsAsync(cancellationToken))
             .Select(destination => Score(destination, preferences, request))
             .OrderByDescending(item => item.Score)
-            .ThenByDescending(item => item.MatchingTags.Count)
+            // A deterministic secondary order keeps equally scored results stable across requests.
             .ThenBy(item => item.Destination.Name, StringComparer.Ordinal)
+            .ThenBy(item => item.Destination.Id)
             .Take(5)
             .Select(item => ToResponse(item, language))
             .ToList();
@@ -33,7 +37,10 @@ public sealed class RecommendationService(IUserRepository users, IDestinationRep
 
     private static ScoredDestination Score(Destination destination, HashSet<string> preferences, RecommendationRequest request)
     {
-        var matchingTags = destination.Tags.Where(tag => preferences.Contains(tag)).ToList();
+        var matchingTags = destination.Tags
+            .Where(tag => !string.IsNullOrWhiteSpace(tag) && preferences.Contains(tag.Trim().ToLowerInvariant()))
+            .Select(tag => tag.Trim())
+            .ToList();
         var score = matchingTags.Count * 4;
         var seasonMatches = destination.BestSeasons.Contains(request.Season, StringComparer.OrdinalIgnoreCase);
         if (seasonMatches) score += 3;
@@ -58,31 +65,23 @@ public sealed class RecommendationService(IUserRepository users, IDestinationRep
             bestTime,
             item.Destination.Tags,
             item.Score,
-            BuildReason(item, language));
-    }
-
-    private static string BuildReason(ScoredDestination item, string language)
-    {
-        if (item.Score == 0)
-            return language == "en" ? "A curated starting suggestion for your trip." : "Kurirana početna preporuka za tvoje putovanje.";
-
-        var reasons = new List<string>();
-        if (item.MatchingTags.Count > 0)
-            reasons.Add(language == "en" ? $"matches your interests: {string.Join(", ", item.MatchingTags)}" : $"odgovara interesovanjima: {string.Join(", ", item.MatchingTags)}");
-        if (item.SeasonMatches) reasons.Add(language == "en" ? "fits the selected season" : "odgovara odabranoj sezoni");
-        if (item.BudgetMatches) reasons.Add(language == "en" ? "matches your budget" : "odgovara budžetu");
-        if (item.DurationMatches) reasons.Add(language == "en" ? "fits your trip length" : "odgovara trajanju putovanja");
-
-        return language == "en" ? $"It {string.Join(" and ", reasons)}." : $"{string.Join(" i ", reasons).Replace("odgovara", "Odgovara", StringComparison.Ordinal)}.";
+            new RecommendationReasonsResponse(
+                item.MatchingTags,
+                item.SeasonMatches,
+                item.BudgetMatches,
+                item.DurationMatches));
     }
 
     private static void Validate(RecommendationRequest request)
     {
-        if (!BudgetTiers.Contains(request.BudgetTier.Trim().ToLowerInvariant())) throw new ValidationException("Budget tier must be budget, standard, or premium.");
-        if (!Seasons.Contains(request.Season.Trim().ToLowerInvariant())) throw new ValidationException("Season must be spring, summer, autumn, or winter.");
-        if (!Languages.Contains(request.Language.Trim().ToLowerInvariant())) throw new ValidationException("Language must be bs or en.");
+        if (!IsAllowed(request.BudgetTier, BudgetTiers)) throw new ValidationException("Budget tier must be budget, standard, or premium.");
+        if (!IsAllowed(request.Season, Seasons)) throw new ValidationException("Season must be spring, summer, autumn, or winter.");
+        if (!IsAllowed(request.Language, Languages)) throw new ValidationException("Language must be bs or en.");
         if (request.TravelDays is < 1 or > 14) throw new ValidationException("Travel days must be between 1 and 14.");
     }
+
+    private static bool IsAllowed(string? value, HashSet<string> allowedValues) =>
+        !string.IsNullOrWhiteSpace(value) && allowedValues.Contains(value.Trim().ToLowerInvariant());
 
     private sealed record ScoredDestination(Destination Destination, int Score, List<string> MatchingTags, bool SeasonMatches, bool BudgetMatches, bool DurationMatches);
 }

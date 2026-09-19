@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, getErrorMessage, Recommendation, UserProfile } from "../lib/api";
-import { formatTag, text } from "../lib/i18n";
+import { formatTag, formatTagLabel, text } from "../lib/i18n";
+import { formatRecommendationReason } from "../lib/recommendation-reason";
 import { useLanguage } from "./language-provider";
 import styles from "./recommendation-wizard.module.css";
 
@@ -169,7 +170,7 @@ export function RecommendationWizard() {
                       {t.map} <span aria-hidden="true">↗</span>
                     </Link>
                   </div>
-                  <div className={styles.reason}><span className={styles.reasonLabel}>{t.why}</span><p>{result.reason}</p><details><summary>{t.about}</summary><p>{result.description}</p><p><strong>{t.bestTime}</strong>{result.bestTimeToVisit}</p></details></div>
+                  <div className={styles.reason}><span className={styles.reasonLabel}>{t.why}</span><p>{formatRecommendationReason(result.reasons, t.recommendationReason, (tag) => formatTagLabel(tag, language))}</p><details><summary>{t.about}</summary><p>{result.description}</p><p><strong>{t.bestTime}</strong>{result.bestTimeToVisit}</p></details></div>
                   <div className={styles.score}><strong>{result.score}</strong><span>{t.points}</span></div>
                 </li>
               ))}

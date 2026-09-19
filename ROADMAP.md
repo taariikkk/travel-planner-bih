@@ -22,8 +22,8 @@ BS/EN i18n, nove izmjene modela samo kroz nove migracije.
 - [x] Next.js + TypeScript + Tailwind scaffold (`web/`)
 - [x] ASP.NET Core Web API scaffold (`api/`)
 - [x] Docker Compose sa PostgreSQL + PostGIS
-- [ ] `.env.example` i `appsettings.Development.json.example` šabloni (bez pravih vrijednosti) commitovani
-- [ ] GitHub Actions CI: build backenda, `dotnet test`, lint/typecheck frontenda
+- [x] `.env.example` i `appsettings.Development.json.example` šabloni (bez pravih vrijednosti) commitovani
+- [x] GitHub Actions CI: build backenda, `dotnet test`, lint/typecheck frontenda
 
 ### Baza podataka i EF Core
 - [x] `ApplicationDbContext` povezan na PostgreSQL
@@ -67,8 +67,8 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
       preferencije korisnika sa tagovima destinacija
 - [x] Endpoint `POST /api/destinations/recommend` vraća rangiranu listu sa
       objašnjenjem ("Trebinje — odgovara tvom interesu za vino i historiju")
-- [ ] Unit testovi za scoring i recommend endpoint (dug: trebali su ići uz funkcionalnost)
-- [ ] Objašnjenja preporuka spojiti u jednu prirodnu rečenicu (umjesto ponavljanja
+- [x] Unit testovi za scoring i recommend endpoint
+- [x] Objašnjenja preporuka spojiti u jednu prirodnu rečenicu (umjesto ponavljanja
       "Odgovara … i Odgovara …"), na BS i EN
 
 ### Stranica destinacije

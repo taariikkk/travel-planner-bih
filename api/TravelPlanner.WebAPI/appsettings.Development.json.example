@@ -1,0 +1,8 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=55432;Database=travelplanner;Username=travelplanner;Password=your_local_password"
+  },
+  "Jwt": {
+    "Key": "replace-with-a-development-jwt-signing-key-at-least-32-characters-long"
+  }
+}

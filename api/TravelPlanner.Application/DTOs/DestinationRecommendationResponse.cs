@@ -8,4 +8,10 @@ public sealed record DestinationRecommendationResponse(
     string BestTimeToVisit,
     List<string> Tags,
     int Score,
-    string Reason);
+    RecommendationReasonsResponse Reasons);
+
+public sealed record RecommendationReasonsResponse(
+    List<string> MatchingTags,
+    bool MatchesSeason,
+    bool MatchesBudget,
+    bool MatchesDuration);
