@@ -1,5 +1,7 @@
 # Travel Planner BiH — AGENTS.md
 
+* Ne koristi provjere u Chrome-u ili slično, nije intaliran plugin *
+
 Ovaj fajl čita Codex (i drugi AI coding agenti) na početku svake sesije.
 Sadrži trajni kontekst projekta. Ne mijenjati bez razloga — ovo je izvor istine
 za arhitekturu i konvencije, ne mjesto za istoriju odluka (to ide u README).
@@ -48,7 +50,7 @@ kasnije bez diranja poslovne logike.
 
 | Namjena | Provajder | Napomena |
 |---|---|---|
-| Mape/rute | Mapbox | Besplatan tier: 50k map loads, 100k geocoding/directions mjesečno |
+| Mape/rute | Mapbox | Map Loads for Web: 5.000/mjesec | Static Tiles API: 20.000/mjesec | Static Images API: 5.000/mjesec | Mobile MAU: 100/mjesec |
 | Mjesta/restorani | OpenStreetMap / Overpass API | Potpuno besplatno, bez ključa |
 | Vrijeme | Open-Meteo | Potpuno besplatno, bez ključa, 10k poziva/dan |
 | Smještaj | Ručno kuriran dataset (20-40 objekata) | Nema API-ja u MVP fazi |

@@ -1,5 +1,7 @@
 # Roadmap — Travel Planner BiH (solo developer, 4-8 sedmica)
 
+* Ne koristi provjere u Chrome-u ili slično, nije intaliran plugin *
+
 Ovo je radni checklist. Čekiraj `[x]` kako završavaš zadatke. Svaki zadatak je
 namjerno dovoljno mali da bude **jedan Codex prompt** — ako ti se čini prevelik,
 razbij ga dalje prije nego ga daš Codexu.
@@ -59,15 +61,42 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
 ### Stranica destinacije
 - [x] Frontend: dinamička ruta `/destinations/[slug]`
 - [x] Prikaz: pregled, tipično trajanje boravka, tagovi
-- [ ] Integracija Mapbox mape (prikaz destinacije + obližnjih mjesta)
-      Implementirana; ostaje browser provjera desktop/mobile i markera stvarnih
-      Place zapisa (Mostar trenutno vraća praznu listu mjesta).
+- [x] Osnovna integracija Mapbox mape (glavni marker destinacije, markeri
+      obližnjih `Place` zapisa kad postoje)
+
+### Mapbox — puni potencijal (novo, prošireno nakon prvog prolaza)
+Osnovna mapa radi (marker Mostara, "Oko tebe 0" ispravno prikazuje prazno
+stanje dok `Place` tabela nije popunjena). Ovi zadaci nadograđuju taj isti
+prikaz da iskoristi više Mapbox mogućnosti, bez izmjene backend logike:
+
+- [ ] Custom Mapbox stil usklađen sa dizajn sistemom (krem pozadina, duboka
+      riječna zelena za markere/akcente) umjesto default Mapbox izgleda —
+      koristi Mapbox Studio ili style override u kodu
+- [ ] Marker clustering — kad destinacija ima puno `Place` zapisa (npr.
+      Sarajevo nakon Overpass integracije), grupiše markere u brojeve
+      umjesto preklapanja; testirati na destinaciji sa najviše mjesta
+- [ ] Popup/tooltip na klik markera — naziv mjesta, kategorija (Atrakcija/
+      Restoran), bez napuštanja stranice
+- [ ] Fit bounds — mapa se automatski centrira/zumira da prikaže destinaciju
+      i sva obližnja mjesta odjednom, umjesto fiksnog zoom nivoa
+- [ ] Pripremiti Directions API poziv kao reusable funkciju/servis (koristi
+      se kasnije za rutu u itinereru, Sedmica 5-6 — ne implementirati punu
+      funkcionalnost ovdje, samo osnovni wrapper da se ne piše ispočetka)
 
 ### OpenStreetMap / Overpass integracija
+Napomena: Overpass API ne zahtijeva API ključ niti registraciju — javni
+endpoint `https://overpass-api.de/api/interpreter` prima upite direktno.
+Ovo je zaseban podatkovni sloj od Mapboxa: Overpass popunjava `Place`
+tabelu stvarnim podacima, Mapbox samo prikazuje ono što je već u bazi.
+
 - [ ] `IPlacesProvider` interfejs (provider abstraction pattern)
 - [ ] `OverpassPlacesProvider` implementacija — upit za restorane/atrakcije po gradu
-- [ ] Keširanje Overpass odgovora (izbjeći ponovljene pozive za istu destinaciju)
+- [ ] Keširanje Overpass odgovora u bazi (izbjeći ponovljene pozive za istu
+      destinaciju — Overpass javni server ima rate limit)
+- [ ] Fallback na alternativni Overpass mirror (npr. `overpass.kumi.systems`)
+      ako glavni endpoint ne odgovori — opciono, ne blokira MVP
 - [ ] Ručno dodane "must-see" lokacije za prioritetne destinacije (30-50 po gradu)
+      kao dopuna Overpass podacima gdje su rijetki/nepotpuni
 
 ### Open-Meteo integracija
 - [ ] `IWeatherProvider` interfejs
@@ -76,8 +105,9 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
 - [ ] Prikaz prognoze na stranici destinacije
 
 **Definicija završenosti Sedmice 3-4**: korisnik odgovori na wizard, dobije
-rangirane preporuke sa objašnjenjem, otvori stranicu destinacije sa mapom,
-mjestima i vremenskom prognozom.
+rangirane preporuke sa objašnjenjem, otvori stranicu destinacije sa mapom
+(u dizajn sistemu, sa markerima i clusteringom), stvarnim obližnjim mjestima
+iz OSM-a i vremenskom prognozom.
 
 ---
 
@@ -94,7 +124,8 @@ mjestima i vremenskom prognozom.
 - [ ] `POST /api/trips/{id}/days` — dodavanje dana
 - [ ] `POST /api/trips/{id}/days/{dayId}/items` — dodavanje stavke (mjesto, redoslijed, napomena)
 - [ ] Frontend: prikaz itinerera po danima (drag-and-drop za redoslijed — opciono za MVP)
-- [ ] Prikaz rute na mapi između stavki istog dana (Mapbox Directions)
+- [ ] Prikaz rute na mapi između stavki istog dana (Mapbox Directions —
+      koristi wrapper pripremljen u Sedmici 3-4)
 
 ### Budžet
 - [ ] `Expense` CRUD endpoint-i, sve u KM
@@ -168,6 +199,8 @@ i deployovan je:
 - [ ] Regionalno proširenje — Hrvatska, Srbija, Crna Gora (ista arhitektura, novi seed podaci)
 - [ ] Flight search (Duffel sandbox ili Travelpayouts) — samo ako treba za AI demo
 - [ ] Mobile aplikacija (Android/iOS)
+- [ ] Mapbox Isochrone API ("šta je dostupno za X minuta odavde") — napredna
+      funkcija, nije potrebna za MVP
 
 ---
 
