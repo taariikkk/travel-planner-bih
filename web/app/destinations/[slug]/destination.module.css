@@ -7,7 +7,7 @@
 .brand { font-size: 17px; color: var(--accent); letter-spacing: -.4px; }
 .main { max-width: 1440px; margin: auto; padding: 0 6%; }
 .breadcrumb { display: flex; gap: 14px; padding: 32px 0; font-size: 12px; color: var(--muted); }
-.breadcrumb a { color: var(--accent); }
+.breadcrumb a { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
 .hero { display: grid; grid-template-columns: .85fr 1.15fr; gap: 7%; align-items: center; padding: 12px 0 64px; }
 .textHero { grid-template-columns: 1fr; }
 .region { color: var(--muted); font-size: 13px; margin-bottom: 18px; }

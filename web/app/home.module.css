@@ -29,6 +29,10 @@
 .primary { display: inline-flex; align-items: center; justify-content: center; gap: 24px; background: var(--accent); color: white; border-radius: 4px; padding: 17px 23px; min-height: 54px; font-size: 14px; font-weight: 600; transition: background-color 160ms ease; }
 .primary:hover { background: #064d40; }
 .heroNote { display: block; font-size: 11px; color: var(--muted); margin-top: 18px; line-height: 1.6; }
+.languageSwitcher { display: inline-flex; padding: 3px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
+.languageSwitcher button { min-width: 42px; min-height: 38px; border: 0; border-radius: 2px; background: transparent; color: var(--muted); font: 600 12px/1 Arial, Helvetica, sans-serif; cursor: pointer; }
+.languageSwitcher button[aria-pressed="true"] { background: var(--accent); color: white; }
+.languageSwitcher button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .photo { margin: 0; min-width: 0; }
 .photoFrame { position: relative; height: clamp(460px, 46vw, 720px); overflow: hidden; }
 .heroImage { object-fit: cover; object-position: 43% 55%; }
@@ -56,7 +60,8 @@
   .header { min-height: 80px; padding: 16px 6%; gap: 12px; }
   .brand { font-size: 14px; gap: 5px; }
   .brand svg { width: 30px; height: 30px; }
-  .nav { font-size: 13px; }
+  .nav { gap: 10px; font-size: 13px; }
+  .languageSwitcher { flex-shrink: 0; }
   .navCta { display: none !important; }
   .hero { grid-template-columns: 1fr; margin-top: 0; }
   .heroCopy { padding: 36px 6% 40px; }

@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import type { Map as MapboxMap, Marker } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Destination } from "./types";
+import { text, type Language } from "../../lib/i18n";
 import styles from "./destination.module.css";
 
-export default function DestinationMap({ destination, token }: { destination: Destination; token: string | null }) {
+export default function DestinationMap({ destination, token, language }: { destination: Destination; token: string | null; language: Language }) {
+  const labels = text[language].destination;
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markers = useRef(new Map<string, Marker>());
@@ -59,16 +61,16 @@ export default function DestinationMap({ destination, token }: { destination: De
   return <div className={styles.mapGrid}>
     <div>
       <div className={styles.mapWrap}>
-        <div ref={container} className={styles.map} role="region" aria-label={`Mapa destinacije ${destination.name}`} />
+        <div ref={container} className={styles.map} role="region" aria-label={language === "en" ? `Map of ${destination.name}` : `Mapa destinacije ${destination.name}`} />
         {(!token || status !== "ready") && <div className={styles.mapStatus} role="status">
-          {!token || status === "error" ? <><p>Mapa trenutno nije dostupna.</p><p>Mjesta možeš pregledati u listi uz mapu.</p>{token && <button onClick={() => { setStatus("loading"); setAttempt(value => value + 1); }}>Pokušaj ponovo</button>}</> : <p>Učitavamo mapu…</p>}
+          {!token || status === "error" ? <><p>{labels.mapUnavailable}</p><p>{labels.mapFallback}</p>{token && <button onClick={() => { setStatus("loading"); setAttempt(value => value + 1); }}>{labels.retry}</button>}</> : <p>{labels.mapLoading}</p>}
         </div>}
       </div>
-      <p className={styles.legend}><span className={styles.legendDestination} /> Destinacija <span className={styles.legendPlace} /> Obližnja mjesta</p>
+      <p className={styles.legend}><span className={styles.legendDestination} /> {labels.mapDestination} <span className={styles.legendPlace} /> {labels.nearby}</p>
     </div>
-    <aside className={styles.places} aria-label="Lista obližnjih mjesta">
-      <h3>Oko tebe <span>{destination.places.length}</span></h3>
-      {destination.places.length ? <ul>{destination.places.map(place => <li key={place.id}><button disabled={status !== "ready" || !token} onClick={() => focusPlace(place.id, place.longitude, place.latitude)}><span>{place.name}<small>{({ restaurant: "Restoran", attraction: "Atrakcija", restoran: "Restoran", atrakcija: "Atrakcija" } as Record<string, string>)[place.category] ?? place.category}</small></span><span aria-hidden="true">↗</span></button></li>)}</ul> : <p>Za ovu destinaciju još nema dodanih obližnjih mjesta. Na mapi je označena sama destinacija.</p>}
+    <aside className={styles.places} aria-label={labels.nearby}>
+      <h3>{labels.around} <span>{destination.places.length}</span></h3>
+      {destination.places.length ? <ul>{destination.places.map(place => <li key={place.id}><button disabled={status !== "ready" || !token} onClick={() => focusPlace(place.id, place.longitude, place.latitude)}><span>{place.name}<small>{({ restaurant: language === "en" ? "Restaurant" : "Restoran", attraction: language === "en" ? "Attraction" : "Atrakcija", restoran: language === "en" ? "Restaurant" : "Restoran", atrakcija: language === "en" ? "Attraction" : "Atrakcija" } as Record<string, string>)[place.category] ?? place.category}</small></span><span aria-hidden="true">↗</span></button></li>)}</ul> : <p>{labels.noPlaces}</p>}
     </aside>
   </div>;
 }

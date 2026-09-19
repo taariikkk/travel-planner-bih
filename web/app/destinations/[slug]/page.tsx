@@ -1,14 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { apiFetch } from "../../lib/api";
+import { formatTag, getLanguage, LANGUAGE_COOKIE, text } from "../../lib/i18n";
 import DestinationMap from "./destination-map";
 import type { Destination } from "./types";
 import styles from "./destination.module.css";
 
 export default async function DestinationPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const response = await apiFetch(`/api/destinations/${encodeURIComponent(slug)}`, { cache: "no-store" });
+  const language = getLanguage((await cookies()).get(LANGUAGE_COOKIE)?.value);
+  const labels = text[language].destination;
+  const response = await apiFetch(`/api/destinations/${encodeURIComponent(slug)}?language=${language}`, { cache: "no-store" });
   if (response.status === 404) notFound();
   if (!response.ok) throw new Error("Destination request failed");
   const destination: Destination = await response.json();
@@ -19,32 +23,31 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
   return <div className={styles.page}>
     <header className={styles.header}>
       <Link href="/" className={styles.brand}>Travel Planner <strong>BiH</strong></Link>
-      <Link href="/recommendations">Moje preporuke <span aria-hidden="true">↗</span></Link>
     </header>
     <main className={styles.main}>
-      <nav className={styles.breadcrumb} aria-label="Putanja"><Link href="/">Početna</Link><span aria-hidden="true">/</span><span>{destination.name}</span></nav>
+      <nav className={styles.breadcrumb} aria-label={labels.breadcrumb}><Link href="/">{labels.home}</Link><span aria-hidden="true">/</span><Link href="/recommendations">{labels.recommendations}</Link><span aria-hidden="true">/</span><span>{destination.name}</span></nav>
       <section className={`${styles.hero} ${!hasPhoto ? styles.textHero : ""}`} aria-labelledby="destination-title">
         <div className={styles.heroCopy}>
-          <p className={styles.region}>{destination.region} · Bosna i Hercegovina</p>
+          <p className={styles.region}>{destination.region} · {labels.country}</p>
           <h1 id="destination-title">{destination.name}</h1>
-          <ul className={styles.tags} aria-label="Interesovanja">{destination.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
+          <ul className={styles.tags} aria-label={labels.interests}>{destination.tags.map(tag => <li key={tag}>{formatTag(tag, language)}</li>)}</ul>
           <dl className={styles.facts}>
-            <div><dt>Vrijeme za istraživanje</dt><dd>{destination.suggestedStayMinDays}–{destination.suggestedStayMaxDays} dana</dd></div>
-            <div><dt>Najbolje vrijeme za posjetu</dt><dd>{destination.bestTimeToVisit}</dd></div>
+            <div><dt>{labels.stay}</dt><dd>{destination.suggestedStayMinDays}–{destination.suggestedStayMaxDays} {labels.days}</dd></div>
+            <div><dt>{labels.bestTime}</dt><dd>{destination.bestTimeToVisit}</dd></div>
           </dl>
-          <a href="#mapa" className={styles.action}>Istraži na mapi <span aria-hidden="true">↓</span></a>
+          <a href="#mapa" className={styles.action}>{labels.mapAction} <span aria-hidden="true">↓</span></a>
         </div>
         {hasPhoto && <figure className={styles.photo}>
-          <div className={styles.photoFrame}><Image src="/mostar-yu-siang-teo.jpg" alt="Stari most iznad Neretve i kamene kuće Mostara" fill preload sizes="(max-width: 760px) 88vw, 52vw" className={styles.image} /></div>
-          <figcaption>Mostar na Neretvi · Fotografija: Yu Siang Teo / Unsplash</figcaption>
+          <div className={styles.photoFrame}><Image src="/mostar-yu-siang-teo.jpg" alt={labels.photoAlt} fill preload sizes="(max-width: 760px) 88vw, 52vw" className={styles.image} /></div>
+          <figcaption>{labels.photoCaption}</figcaption>
         </figure>}
       </section>
-      <section className={styles.overview} aria-labelledby="overview-title"><h2 id="overview-title">Upoznaj {destination.name}</h2><p>{destination.description}</p></section>
+      <section className={styles.overview} aria-labelledby="overview-title"><h2 id="overview-title">{labels.overview} {destination.name}</h2><p>{destination.description}</p></section>
       <section id="mapa" className={styles.mapSection} aria-labelledby="map-title">
-        <div className={styles.mapHeading}><h2 id="map-title">Mjesta u blizini</h2><p>Pronađi svoj sljedeći korak.</p></div>
-        <DestinationMap destination={destination} token={publicToken} />
+        <div className={styles.mapHeading}><h2 id="map-title">{labels.mapTitle}</h2><p>{labels.mapIntro}</p></div>
+        <DestinationMap destination={destination} token={publicToken} language={language} />
       </section>
     </main>
-    <footer className={styles.footer}><span>Travel Planner BiH</span><Link href="/recommendations">Nastavi istraživati ↗</Link></footer>
+    <footer className={styles.footer}><span>Travel Planner BiH</span><Link href="/recommendations">{labels.continue}</Link></footer>
   </div>;
 }

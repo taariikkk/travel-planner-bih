@@ -4,15 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, getErrorMessage, Recommendation, UserProfile } from "../lib/api";
+import { formatTag, text } from "../lib/i18n";
+import { useLanguage } from "./language-provider";
 import styles from "./recommendation-wizard.module.css";
 
-const interests = [
-  ["historija", "Historija"], ["kultura", "Kultura"], ["priroda", "Priroda"], ["planina", "Planina"],
-  ["avantura", "Avantura"], ["hrana", "Hrana"], ["vino", "Vino"], ["rijeka", "Rijeka"],
-] as const;
-
-const budgets = [["budget", "Niži"], ["standard", "Srednji"], ["premium", "Viši"]] as const;
-const seasons = [["spring", "Proljeće"], ["summer", "Ljeto"], ["autumn", "Jesen"], ["winter", "Zima"]] as const;
 
 function destinationSlug(name: string) {
   return name
@@ -26,16 +21,18 @@ function destinationSlug(name: string) {
 
 export function RecommendationWizard() {
   const router = useRouter();
+  const language = useLanguage();
+  const t = text[language].rec;
   const tokenRef = useRef<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [budgetTier, setBudgetTier] = useState("standard");
   const [travelDays, setTravelDays] = useState(3);
   const [season, setSeason] = useState("summer");
-  const [language, setLanguage] = useState("bs");
   const [results, setResults] = useState<Recommendation[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const previousLanguage = useRef(language);
 
   useEffect(() => {
     const storedToken = sessionStorage.getItem("travelPlanner.accessToken");
@@ -46,41 +43,51 @@ export function RecommendationWizard() {
     tokenRef.current = storedToken;
     apiFetch("/api/users/me", {}, storedToken)
       .then(async (response) => {
-        if (!response.ok) throw new Error("Sesija je istekla. Prijavi se ponovo.");
+        if (!response.ok) throw new Error(t.expired);
         const user = (await response.json()) as UserProfile;
         setProfile(user);
         setSelectedInterests(user.preferences);
       })
-      .catch((exception: unknown) => setError(exception instanceof Error ? exception.message : "Profil nije dostupan."))
+      .catch((exception: unknown) => setError(exception instanceof Error ? exception.message : t.profileUnavailable))
       .finally(() => setIsLoading(false));
-  }, [router]);
+  }, [router, t.expired, t.profileUnavailable]);
+
+  useEffect(() => {
+    if (previousLanguage.current === language) return;
+    previousLanguage.current = language;
+    const token = tokenRef.current;
+    if (!token || !profile || results.length === 0) return;
+    setError("");
+    setIsLoading(true);
+    apiFetch("/api/destinations/recommend", { method: "POST", body: JSON.stringify({ budgetTier, travelDays, season, language }) }, token)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await getErrorMessage(response, t.unavailable));
+        setResults((await response.json()) as Recommendation[]);
+      })
+      .catch((exception: unknown) => setError(exception instanceof Error ? exception.message : text[language].auth.unexpectedError))
+      .finally(() => setIsLoading(false));
+  }, [budgetTier, language, profile, results.length, season, t.unavailable, travelDays]);
 
   function toggleInterest(interest: string) {
     setSelectedInterests((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest]);
   }
 
-  async function findRecommendations(nextLanguage = language) {
+  async function findRecommendations() {
     const token = tokenRef.current;
     if (!token || !profile) return;
     setError("");
     setIsLoading(true);
     try {
       const updateProfile = await apiFetch("/api/users/me", { method: "PUT", body: JSON.stringify({ displayName: profile.displayName, preferences: selectedInterests }) }, token);
-      if (!updateProfile.ok) throw new Error(await getErrorMessage(updateProfile, "Interesovanja nisu sačuvana."));
-      const response = await apiFetch("/api/destinations/recommend", { method: "POST", body: JSON.stringify({ budgetTier, travelDays, season, language: nextLanguage }) }, token);
-      if (!response.ok) throw new Error(await getErrorMessage(response, "Preporuke nisu dostupne."));
+      if (!updateProfile.ok) throw new Error(await getErrorMessage(updateProfile, t.interestsSaveFailed));
+      const response = await apiFetch("/api/destinations/recommend", { method: "POST", body: JSON.stringify({ budgetTier, travelDays, season, language }) }, token);
+      if (!response.ok) throw new Error(await getErrorMessage(response, t.unavailable));
       setResults((await response.json()) as Recommendation[]);
-      setLanguage(nextLanguage);
     } catch (exception) {
-      setError(exception instanceof Error ? exception.message : "Došlo je do greške.");
+      setError(exception instanceof Error ? exception.message : text[language].auth.unexpectedError);
     } finally {
       setIsLoading(false);
     }
-  }
-
-  function changeLanguage(nextLanguage: string) {
-    if (nextLanguage !== language && results.length > 0) void findRecommendations(nextLanguage);
-    else setLanguage(nextLanguage);
   }
 
   function logout() {
@@ -88,30 +95,30 @@ export function RecommendationWizard() {
     router.replace("/");
   }
 
-  if (isLoading && !profile) return <main className={styles.loading} role="status">Učitavamo tvoj profil…</main>;
+  if (isLoading && !profile) return <main className={styles.loading} role="status">{t.loadingProfile}</main>;
 
   return (
     <main className={styles.page}>
       <nav className={styles.nav} aria-label="Glavna navigacija">
         <div className={styles.navInner}>
           <Link className={styles.brand} href="/">Travel Planner <strong>BiH</strong></Link>
-          <div className={styles.account}><span>{profile?.displayName}</span><button onClick={logout}>Odjavi se</button></div>
+          <div className={styles.account}><span>{profile?.displayName}</span><button onClick={logout}>{t.logout}</button></div>
         </div>
       </nav>
       <section className={styles.heading}>
         <div className={styles.headingBackdrop} aria-hidden="true" />
         <div className={styles.headingContent}>
-          <h1>Gdje te vodi <em>znatiželja?</em></h1>
-          <p>Reci nam šta voliš. Pronađimo tvoj sljedeći kutak Bosne i Hercegovine.</p>
+          <h1>{t.title[0]} <em>{t.title[1]}</em></h1>
+          <p>{t.description}</p>
         </div>
       </section>
       <section className={styles.content} aria-label="Preferencije i preporuke">
         <div className={styles.wizard}>
           <fieldset className={styles.interests}>
-            <legend><span className={styles.number}>01</span> Šta želiš doživjeti?</legend>
-            <p className={styles.hint}>Odaberi sve što te privlači.</p>
+            <legend><span className={styles.number}>01</span> {t.interestsTitle}</legend>
+            <p className={styles.hint}>{t.interestsHint}</p>
             <div className={styles.options}>
-              {interests.map(([value, label]) => (
+              {t.interestOptions.map(([value, label]) => (
                 <button type="button" key={value} aria-pressed={selectedInterests.includes(value)} onClick={() => toggleInterest(value)} className={styles.option}>
                   <span aria-hidden="true" className={styles.check}>{selectedInterests.includes(value) ? "✓" : "+"}</span>{label}
                 </button>
@@ -120,38 +127,35 @@ export function RecommendationWizard() {
           </fieldset>
           <div className={styles.details}>
             <fieldset>
-              <legend><span className={styles.number}>02</span> Tvoj budžet</legend>
-              <p className={styles.hint}>Okvirni nivo troška, bez iznosa u KM.</p>
-              <div className={styles.options}>{budgets.map(([value, label]) => <button type="button" key={value} aria-pressed={budgetTier === value} onClick={() => setBudgetTier(value)} className={styles.option}>{label}</button>)}</div>
+              <legend><span className={styles.number}>02</span> {t.budget}</legend>
+              <p className={styles.hint}>{t.budgetHint}</p>
+              <div className={styles.options}>{t.budgets.map(([value, label]) => <button type="button" key={value} aria-pressed={budgetTier === value} onClick={() => setBudgetTier(value)} className={styles.option}>{label}</button>)}</div>
             </fieldset>
             <div>
-              <label htmlFor="travel-days" className={styles.fieldTitle}><span className={styles.number}>03</span> Koliko dana imaš?</label>
-              <p id="travel-days-hint" className={styles.hint}>Od kratkog predaha do dužeg odmora.</p>
-              <div className={styles.days}><input id="travel-days" aria-describedby="travel-days-hint" min="1" max="14" type="number" value={travelDays} onChange={(event) => setTravelDays(Number(event.target.value))} /><span>dana <small> / 1–14</small></span></div>
+              <label htmlFor="travel-days" className={styles.fieldTitle}><span className={styles.number}>03</span> {t.days}</label>
+              <p id="travel-days-hint" className={styles.hint}>{t.daysHint}</p>
+              <div className={styles.days}><input id="travel-days" aria-describedby="travel-days-hint" min="1" max="14" type="number" value={travelDays} onChange={(event) => setTravelDays(Number(event.target.value))} /><span>{t.daysUnit} <small> / 1–14</small></span></div>
             </div>
             <fieldset>
-              <legend><span className={styles.number}>04</span> Kada putuješ?</legend>
-              <p className={styles.hint}>Svako godišnje doba ima svoj doživljaj.</p>
-              <div className={styles.options}>{seasons.map(([value, label]) => <button type="button" key={value} aria-pressed={season === value} onClick={() => setSeason(value)} className={styles.option}>{label}</button>)}</div>
+              <legend><span className={styles.number}>04</span> {t.season}</legend>
+              <p className={styles.hint}>{t.seasonHint}</p>
+              <div className={styles.options}>{t.seasons.map(([value, label]) => <button type="button" key={value} aria-pressed={season === value} onClick={() => setSeason(value)} className={styles.option}>{label}</button>)}</div>
             </fieldset>
           </div>
           <div className={styles.submitRow}>
-            <p>Interesovanja čuvamo na tvom profilu.<br />Odabir možeš promijeniti kad god poželiš.</p>
+            <p>{t.saved[0]}<br />{t.saved[1]}</p>
             <button disabled={isLoading || !profile} onClick={() => void findRecommendations()} className={styles.primary}>
-              {isLoading ? "Tražimo preporuke…" : "Prikaži preporuke"}
+              {isLoading ? t.finding : t.find}
               <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
           </div>
         </div>
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-        <div role="status" className={styles.status}>{isLoading ? "Učitavanje preporuka…" : results.length > 0 ? `Prikazano preporuka: ${results.length}.` : ""}</div>
+        <div role="status" className={styles.status}>{isLoading ? t.loading : results.length > 0 ? t.shown(results.length) : ""}</div>
         {results.length > 0 ? (
           <section className={styles.results} aria-busy={isLoading} aria-labelledby="results-title">
             <div className={styles.resultsHeader}>
-              <div><h2 id="results-title">Mjesta za tvoj ritam.</h2><p>Tvoje preporuke, poredane prema odabranim preferencijama.</p></div>
-              <div className={styles.language} role="group" aria-label="Jezik preporuka">
-                {["bs", "en"].map((code) => <button key={code} disabled={isLoading} aria-pressed={language === code} aria-label={code === "bs" ? "Preporuke na bosanskom" : "Recommendations in English"} onClick={() => changeLanguage(code)}>{code.toUpperCase()}</button>)}
-              </div>
+              <div><h2 id="results-title">{t.resultsTitle}</h2><p>{t.resultsDescription}</p></div>
             </div>
             <ol className={styles.resultList} lang={language}>
               {results.map((result, index) => (
@@ -160,18 +164,18 @@ export function RecommendationWizard() {
                   <div className={styles.destination}>
                     <p>{result.region}</p>
                     <h3>{result.name}</h3>
-                    <div className={styles.tags}>{result.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                    <div className={styles.tags}>{result.tags.map((tag) => <span key={tag}>{formatTag(tag, language)}</span>)}</div>
                     <Link className={styles.destinationLink} href={`/destinations/${destinationSlug(result.name)}#mapa`}>
-                      {language === "en" ? "Open map" : "Otvori mapu"} <span aria-hidden="true">↗</span>
+                      {t.map} <span aria-hidden="true">↗</span>
                     </Link>
                   </div>
-                  <div className={styles.reason}><span className={styles.reasonLabel}>{language === "en" ? "Why it fits" : "Zašto ti odgovara"}</span><p>{result.reason}</p><details><summary>{language === "en" ? "About this destination" : "Više o destinaciji"}</summary><p>{result.description}</p><p><strong>{language === "en" ? "Best time to visit: " : "Najbolje vrijeme za posjetu: "}</strong>{result.bestTimeToVisit}</p></details></div>
-                  <div className={styles.score}><strong>{result.score}</strong><span>{language === "en" ? "points" : "bodova"}</span></div>
+                  <div className={styles.reason}><span className={styles.reasonLabel}>{t.why}</span><p>{result.reason}</p><details><summary>{t.about}</summary><p>{result.description}</p><p><strong>{t.bestTime}</strong>{result.bestTimeToVisit}</p></details></div>
+                  <div className={styles.score}><strong>{result.score}</strong><span>{t.points}</span></div>
                 </li>
               ))}
             </ol>
           </section>
-        ) : !error ? <div className={styles.empty}><span aria-hidden="true">↳</span><p>Prvo tvoja interesovanja.<br /><strong>Zatim mjesta koja vrijedi upoznati.</strong></p></div> : null}
+        ) : !error ? <div className={styles.empty}><span aria-hidden="true">↳</span><p>{t.empty[0]}<br /><strong>{t.empty[1]}</strong></p></div> : null}
       </section>
     </main>
   );

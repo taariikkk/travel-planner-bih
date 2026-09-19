@@ -1,5 +1,9 @@
+"use client";
 import Link from "next/link";
+import { useLanguage } from "../../components/language-provider";
+import { text } from "../../lib/i18n";
 import styles from "./destination.module.css";
 export default function NotFound() {
-  return <main className={`${styles.page} ${styles.message}`}><h1>Destinacija nije pronađena.</h1><p>Provjeri adresu ili pronađi novo mjesto među preporukama.</p><Link className={styles.action} href="/recommendations">Istraži preporuke</Link></main>;
+  const t = text[useLanguage()].destination;
+  return <main className={`${styles.page} ${styles.message}`}><h1>{t.missingTitle}</h1><p>{t.missingText}</p><Link className={styles.action} href="/recommendations">{t.explore}</Link></main>;
 }
