@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TravelPlanner.Api.Domain.Entities;
 
 namespace TravelPlanner.Api.Infrastructure.Persistence;
@@ -7,6 +8,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Destination> Destinations => Set<Destination>();
+    public DbSet<DestinationTranslation> DestinationTranslations => Set<DestinationTranslation>();
     public DbSet<Place> Places => Set<Place>();
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<TripDay> TripDays => Set<TripDay>();
@@ -36,7 +38,24 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(destination => destination.Region).IsRequired();
             entity.Property(destination => destination.Description).IsRequired();
             entity.Property(destination => destination.BestTimeToVisit).IsRequired();
-            entity.Property(destination => destination.Tags).HasColumnType("text[]");
+            var tagsProperty = entity.Property(destination => destination.Tags).HasColumnType("text[]");
+            tagsProperty.Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                (left, right) => left!.SequenceEqual(right!),
+                tags => tags.Aggregate(0, (hash, tag) => HashCode.Combine(hash, tag.GetHashCode(StringComparison.Ordinal))),
+                tags => tags.ToList()));
+            entity.HasData(DestinationSeedData.Destinations);
+        });
+
+        modelBuilder.Entity<DestinationTranslation>(entity =>
+        {
+            entity.ToTable("DestinationTranslation");
+            entity.Property(translation => translation.LanguageCode).IsRequired().HasMaxLength(2);
+            entity.Property(translation => translation.Description).IsRequired();
+            entity.Property(translation => translation.BestTimeToVisit).IsRequired();
+            entity.HasIndex(translation => new { translation.DestinationId, translation.LanguageCode }).IsUnique();
+            entity.HasOne(translation => translation.Destination).WithMany(destination => destination.Translations)
+                .HasForeignKey(translation => translation.DestinationId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasData(DestinationSeedData.Translations);
         });
 
         modelBuilder.Entity<Place>(entity =>

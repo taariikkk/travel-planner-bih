@@ -11,4 +11,5 @@ public sealed class Destination
     public List<Place> Places { get; set; } = [];
     public List<Accommodation> Accommodations { get; set; } = [];
     public List<WeatherSnapshot> WeatherSnapshots { get; set; } = [];
+    public List<DestinationTranslation> Translations { get; set; } = [];
 }

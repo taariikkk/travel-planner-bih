@@ -29,6 +29,7 @@ public sealed class ApplicationDbContextModelTests
         using var context = CreateContext();
 
         Assert.Equal("Destination", context.Model.FindEntityType(typeof(Destination))!.GetTableName());
+        Assert.Equal("DestinationTranslation", context.Model.FindEntityType(typeof(DestinationTranslation))!.GetTableName());
         Assert.Equal("Place", context.Model.FindEntityType(typeof(Place))!.GetTableName());
         Assert.Equal("Trip", context.Model.FindEntityType(typeof(Trip))!.GetTableName());
         Assert.Equal("TripDay", context.Model.FindEntityType(typeof(TripDay))!.GetTableName());
@@ -46,6 +47,7 @@ public sealed class ApplicationDbContextModelTests
         var user = context.Model.FindEntityType(typeof(User))!;
         var destination = context.Model.FindEntityType(typeof(Destination))!;
         var place = context.Model.FindEntityType(typeof(Place))!;
+        var translation = context.Model.FindEntityType(typeof(DestinationTranslation))!;
         var expense = context.Model.FindEntityType(typeof(Expense))!;
         var tripDay = context.Model.FindEntityType(typeof(TripDay))!;
         var itineraryItem = context.Model.FindEntityType(typeof(ItineraryItem))!;
@@ -53,6 +55,7 @@ public sealed class ApplicationDbContextModelTests
         Assert.Equal("text[]", user.FindProperty(nameof(User.Preferences))!.GetColumnType());
         Assert.Equal("text[]", destination.FindProperty(nameof(Destination.Tags))!.GetColumnType());
         Assert.Equal("geometry (point,4326)", place.FindProperty(nameof(Place.Location))!.GetColumnType());
+        Assert.Contains(translation.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(DestinationTranslation.DestinationId), nameof(DestinationTranslation.LanguageCode)]));
         Assert.Equal("numeric(18,2)", expense.FindProperty(nameof(Expense.AmountKM))!.GetColumnType());
         Assert.Contains(tripDay.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(TripDay.TripId), nameof(TripDay.DayNumber)]));
         Assert.Contains(itineraryItem.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(ItineraryItem.TripDayId), nameof(ItineraryItem.Order)]));

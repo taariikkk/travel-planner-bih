@@ -32,15 +32,15 @@ Redoslijed unutar sedmice je preporučen, ali ne strogo obavezan — neki zadaci
 - [x] PostGIS ekstenzija uključena u migraciji (`CREATE EXTENSION IF NOT EXISTS postgis`)
 
 ### Autentifikacija
-- [ ] Registracija endpoint (`POST /api/auth/register`) — hash lozinke (bcrypt/Argon2)
-- [ ] Login endpoint (`POST /api/auth/login`) — vraća JWT access token
-- [ ] JWT middleware/autorizacija na backend-u
-- [ ] Endpoint za profil (`GET/PUT /api/users/me`) uključujući preferencije
-- [ ] Unit testovi za auth logiku (hashing, token generisanje)
+- [x] Registracija endpoint (`POST /api/auth/register`) — hash lozinke (bcrypt/Argon2)
+- [x] Login endpoint (`POST /api/auth/login`) — vraća JWT access token
+- [x] JWT middleware/autorizacija na backend-u
+- [x] Endpoint za profil (`GET/PUT /api/users/me`) uključujući preferencije
+- [x] Unit testovi za auth logiku (hashing, token generisanje)
 
 ### Seed podaci
-- [ ] Seed skripta/migracija sa 10-15 BiH destinacija (tabela 1.2 iz specifikacije: Sarajevo, Mostar, Trebinje i Hercegovina, Neum, Jahorina i Bjelašnica, Banja Luka, Travnik, Počitelj, Višegrad, Jajce)
-- [ ] Svaka destinacija ima opis, best time to visit, tagove (historija/priroda/grad/hrana)
+- [x] Seed skripta/migracija sa 10-15 BiH destinacija (tabela 1.2 iz specifikacije: Sarajevo, Mostar, Trebinje i Hercegovina, Neum, Jahorina i Bjelašnica, Banja Luka, Travnik, Počitelj, Višegrad, Jajce)
+- [x] Svaka destinacija ima opis, best time to visit, tagove (historija/priroda/grad/hrana)
 
 **Definicija završenosti Sedmice 1-2**: korisnik se može registrovati, prijaviti,
 podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.

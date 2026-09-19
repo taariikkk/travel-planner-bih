@@ -25,6 +25,11 @@ public sealed class AuthService(IUserRepository users, IPasswordHasher passwordH
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return null;
+        }
+
         var user = await users.GetByEmailAsync(NormalizeEmail(request.Email), cancellationToken);
         return user is not null && passwordHasher.Verify(request.Password, user.PasswordHash) ? CreateAuthResponse(user) : null;
     }
