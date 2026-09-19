@@ -10,12 +10,51 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Application.Interfaces;
+using TravelPlanner.Application.DTOs;
 using Xunit;
 
 namespace TravelPlanner.Api.Tests.WebAPI;
 
 public sealed class DestinationEndpointsTests
 {
+    [Fact]
+    public async Task Details_is_public_and_returns_coordinates_places_and_localized_content()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/destinations/mostar?language=en");
+        var body = await response.Content.ReadFromJsonAsync<DestinationDetailsResponse>();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.Equal("mostar", body.Slug);
+        Assert.Equal("English description", body.Description);
+        Assert.Equal(43.3373, body.Latitude);
+        Assert.Equal(17.815, body.Longitude);
+        Assert.Equal(2, body.SuggestedStayMinDays);
+        Assert.Equal("restaurant", Assert.Single(body.Places).Category);
+    }
+
+    [Theory]
+    [InlineData("/api/destinations/missing", HttpStatusCode.NotFound)]
+    [InlineData("/api/destinations/mostar?language=de", HttpStatusCode.BadRequest)]
+    public async Task Details_handles_unknown_slug_and_unsupported_language(string url, HttpStatusCode expected)
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        Assert.Equal(expected, (await client.GetAsync(url)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Details_defaults_to_bosnian_and_preserves_empty_places()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        var body = await client.GetFromJsonAsync<DestinationDetailsResponse>("/api/destinations/trebinje");
+        Assert.NotNull(body);
+        Assert.Equal("Opis", body.Description);
+        Assert.Empty(body.Places);
+    }
+
     [Fact]
     public async Task Recommend_requires_a_token()
     {
@@ -70,7 +109,23 @@ public sealed class DestinationEndpointsTests
                 services.AddSingleton<Users>();
                 services.AddScoped<IUserRepository>(provider => provider.GetRequiredService<Users>());
                 services.AddSingleton<IDestinationRepository>(new Destinations());
+                services.RemoveAll<IDestinationDetailsRepository>();
+                services.AddSingleton<IDestinationDetailsRepository>(new Details());
             });
+        }
+    }
+
+    private sealed class Details : IDestinationDetailsRepository
+    {
+        public Task<DestinationDetailsResponse?> GetBySlugAsync(string slug, string language, CancellationToken cancellationToken)
+        {
+            DestinationDetailsResponse? result = slug is "mostar" or "trebinje"
+                ? new(Guid.NewGuid(), slug, slug == "mostar" ? "Mostar" : "Trebinje", "Hercegovina",
+                    language == "en" ? "English description" : "Opis", "maj-septembar", 2, 3,
+                    ["historija"], 43.3373, 17.815,
+                    slug == "mostar" ? [new(Guid.NewGuid(), "Test restoran", "restaurant", 43.338, 17.816)] : [])
+                : null;
+            return Task.FromResult(result);
         }
     }
 

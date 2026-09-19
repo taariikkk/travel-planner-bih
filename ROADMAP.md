@@ -57,9 +57,11 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
       objašnjenjem ("Trebinje — odgovara tvom interesu za vino i historiju")
 
 ### Stranica destinacije
-- [ ] Frontend: dinamička ruta `/destinations/[slug]`
-- [ ] Prikaz: pregled, tipično trajanje boravka, tagovi
+- [x] Frontend: dinamička ruta `/destinations/[slug]`
+- [x] Prikaz: pregled, tipično trajanje boravka, tagovi
 - [ ] Integracija Mapbox mape (prikaz destinacije + obližnjih mjesta)
+      Implementirana; ostaje browser provjera desktop/mobile i markera stvarnih
+      Place zapisa (Mostar trenutno vraća praznu listu mjesta).
 
 ### OpenStreetMap / Overpass integracija
 - [ ] `IPlacesProvider` interfejs (provider abstraction pattern)
