@@ -69,9 +69,6 @@ Osnovna mapa radi (marker Mostara, "Oko tebe 0" ispravno prikazuje prazno
 stanje dok `Place` tabela nije popunjena). Ovi zadaci nadograđuju taj isti
 prikaz da iskoristi više Mapbox mogućnosti, bez izmjene backend logike:
 
-- [ ] Custom Mapbox stil usklađen sa dizajn sistemom (krem pozadina, duboka
-      riječna zelena za markere/akcente) umjesto default Mapbox izgleda —
-      koristi Mapbox Studio ili style override u kodu
 - [ ] Marker clustering — kad destinacija ima puno `Place` zapisa (npr.
       Sarajevo nakon Overpass integracije), grupiše markere u brojeve
       umjesto preklapanja; testirati na destinaciji sa najviše mjesta

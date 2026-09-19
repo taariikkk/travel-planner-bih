@@ -14,6 +14,16 @@ const interests = [
 const budgets = [["budget", "Niži"], ["standard", "Srednji"], ["premium", "Viši"]] as const;
 const seasons = [["spring", "Proljeće"], ["summer", "Ljeto"], ["autumn", "Jesen"], ["winter", "Zima"]] as const;
 
+function destinationSlug(name: string) {
+  return name
+    .toLocaleLowerCase("bs")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function RecommendationWizard() {
   const router = useRouter();
   const tokenRef = useRef<string | null>(null);
@@ -147,7 +157,14 @@ export function RecommendationWizard() {
               {results.map((result, index) => (
                 <li key={result.id} className={styles.result}>
                   <span className={styles.rank} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                  <div className={styles.destination}><p>{result.region}</p><h3>{result.name}</h3><div className={styles.tags}>{result.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>
+                  <div className={styles.destination}>
+                    <p>{result.region}</p>
+                    <h3>{result.name}</h3>
+                    <div className={styles.tags}>{result.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                    <Link className={styles.destinationLink} href={`/destinations/${destinationSlug(result.name)}#mapa`}>
+                      {language === "en" ? "Open map" : "Otvori mapu"} <span aria-hidden="true">↗</span>
+                    </Link>
+                  </div>
                   <div className={styles.reason}><span className={styles.reasonLabel}>{language === "en" ? "Why it fits" : "Zašto ti odgovara"}</span><p>{result.reason}</p><details><summary>{language === "en" ? "About this destination" : "Više o destinaciji"}</summary><p>{result.description}</p><p><strong>{language === "en" ? "Best time to visit: " : "Najbolje vrijeme za posjetu: "}</strong>{result.bestTimeToVisit}</p></details></div>
                   <div className={styles.score}><strong>{result.score}</strong><span>{language === "en" ? "points" : "bodova"}</span></div>
                 </li>
