@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TravelPlanner.Api.Domain.Entities;
 
 namespace TravelPlanner.Api.Infrastructure.Persistence;
@@ -38,11 +39,11 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(destination => destination.Region).IsRequired();
             entity.Property(destination => destination.Description).IsRequired();
             entity.Property(destination => destination.BestTimeToVisit).IsRequired();
-            var tagsProperty = entity.Property(destination => destination.Tags).HasColumnType("text[]");
-            tagsProperty.Metadata.SetValueComparer(new ValueComparer<List<string>>(
-                (left, right) => left!.SequenceEqual(right!),
-                tags => tags.Aggregate(0, (hash, tag) => HashCode.Combine(hash, tag.GetHashCode(StringComparison.Ordinal))),
-                tags => tags.ToList()));
+            entity.Property(destination => destination.BudgetTier).IsRequired().HasMaxLength(16);
+            entity.Property(destination => destination.SuggestedStayMinDays).IsRequired();
+            entity.Property(destination => destination.SuggestedStayMaxDays).IsRequired();
+            ConfigureStringList(entity.Property(destination => destination.BestSeasons));
+            ConfigureStringList(entity.Property(destination => destination.Tags));
             entity.HasData(DestinationSeedData.Destinations);
         });
 
@@ -123,5 +124,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.HasOne(snapshot => snapshot.Destination).WithMany(destination => destination.WeatherSnapshots)
                 .HasForeignKey(snapshot => snapshot.DestinationId).OnDelete(DeleteBehavior.Cascade);
         });
+    }
+
+    private static void ConfigureStringList(PropertyBuilder<List<string>> property)
+    {
+        property.HasColumnType("text[]");
+        property.Metadata.SetValueComparer(new ValueComparer<List<string>>(
+            (left, right) => left!.SequenceEqual(right!),
+            values => values.Aggregate(0, (hash, value) => HashCode.Combine(hash, value.GetHashCode(StringComparison.Ordinal))),
+            values => values.ToList()));
     }
 }

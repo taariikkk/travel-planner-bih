@@ -7,6 +7,10 @@ public sealed class Destination
     public string Region { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string BestTimeToVisit { get; set; } = string.Empty;
+    public string BudgetTier { get; set; } = string.Empty;
+    public int SuggestedStayMinDays { get; set; }
+    public int SuggestedStayMaxDays { get; set; }
+    public List<string> BestSeasons { get; set; } = [];
     public List<string> Tags { get; set; } = [];
     public List<Place> Places { get; set; } = [];
     public List<Accommodation> Accommodations { get; set; } = [];

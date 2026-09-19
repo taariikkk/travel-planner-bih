@@ -66,6 +66,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapAuthEndpoints();
+app.MapDestinationEndpoints();
 
 var summaries = new[]
 {

@@ -54,6 +54,8 @@ public sealed class ApplicationDbContextModelTests
 
         Assert.Equal("text[]", user.FindProperty(nameof(User.Preferences))!.GetColumnType());
         Assert.Equal("text[]", destination.FindProperty(nameof(Destination.Tags))!.GetColumnType());
+        Assert.Equal("text[]", destination.FindProperty(nameof(Destination.BestSeasons))!.GetColumnType());
+        Assert.Equal(16, destination.FindProperty(nameof(Destination.BudgetTier))!.GetMaxLength());
         Assert.Equal("geometry (point,4326)", place.FindProperty(nameof(Place.Location))!.GetColumnType());
         Assert.Contains(translation.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(DestinationTranslation.DestinationId), nameof(DestinationTranslation.LanguageCode)]));
         Assert.Equal("numeric(18,2)", expense.FindProperty(nameof(Expense.AmountKM))!.GetColumnType());

@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         services.AddSingleton(jwtOptions);
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IDestinationRepository, DestinationRepository>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 

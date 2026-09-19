@@ -45,15 +45,38 @@ internal static class DestinationSeedData
         Translation("2a0a0001-0000-4000-8000-000000000022", "1a0a0001-0000-4000-8000-000000000011", "en", "Jajce is the only town in the world with a waterfall right at its center — the Pliva plunges roughly 20 meters into the Vrbas, just below the medieval fortress that was once the last stronghold of the independent Bosnian Kingdom. In 1943 the town hosted the second AVNOJ session, which laid the foundation for socialist Yugoslavia. A few kilometers upstream, old watermills on the Pliva Lakes (\"mlinčići\") add another layer to this small but historically rich town.", "May-October")
     ];
 
-    private static Destination Destination(string id, string name, string region, string description, string bestTimeToVisit, string[] tags) => new()
+    private static Destination Destination(string id, string name, string region, string description, string bestTimeToVisit, string[] tags)
     {
-        Id = Guid.Parse(id),
-        Name = name,
-        Region = region,
-        Description = description,
-        BestTimeToVisit = bestTimeToVisit,
-        Tags = tags.ToList()
+        var metadata = GetMetadata(name);
+        return new Destination
+        {
+            Id = Guid.Parse(id),
+            Name = name,
+            Region = region,
+            Description = description,
+            BestTimeToVisit = bestTimeToVisit,
+            BudgetTier = metadata.BudgetTier,
+            SuggestedStayMinDays = metadata.MinDays,
+            SuggestedStayMaxDays = metadata.MaxDays,
+            BestSeasons = metadata.Seasons.ToList(),
+            Tags = tags.ToList()
+        };
+    }
+
+    private static DestinationMetadata GetMetadata(string destinationName) => destinationName switch
+    {
+        "Sarajevo" => new("standard", 2, 4, ["spring", "summer", "autumn"]),
+        "Mostar" or "Trebinje" => new("standard", 2, 3, ["spring", "summer", "autumn"]),
+        "Neum" => new("standard", 3, 5, ["summer"]),
+        "Jahorina" => new("premium", 2, 4, ["winter", "summer"]),
+        "Bjelašnica" => new("standard", 2, 3, ["winter", "summer"]),
+        "Banja Luka" => new("budget", 2, 3, ["spring", "summer", "autumn"]),
+        "Travnik" or "Počitelj" or "Višegrad" => new("budget", 1, 2, ["spring", "summer", "autumn"]),
+        "Jajce" => new("standard", 2, 3, ["spring", "summer", "autumn"]),
+        _ => throw new InvalidOperationException($"Metadata for '{destinationName}' is missing.")
     };
+
+    private sealed record DestinationMetadata(string BudgetTier, int MinDays, int MaxDays, string[] Seasons);
 
     private static DestinationTranslation Translation(string id, string destinationId, string languageCode, string description, string bestTimeToVisit) => new()
     {

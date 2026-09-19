@@ -50,10 +50,10 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
 ## Sedmica 3-4 — Discovery i mape
 
 ### Wizard preferencija i scoring
-- [ ] Frontend: wizard komponenta (interesovanja, budžet, broj dana, sezona)
-- [ ] Backend: `search_bih_destinations` logika — scoring algoritam koji upoređuje
+- [x] Frontend: wizard komponenta (interesovanja, budžet, broj dana, sezona)
+- [x] Backend: `search_bih_destinations` logika — scoring algoritam koji upoređuje
       preferencije korisnika sa tagovima destinacija
-- [ ] Endpoint `POST /api/destinations/recommend` vraća rangiranu listu sa
+- [x] Endpoint `POST /api/destinations/recommend` vraća rangiranu listu sa
       objašnjenjem ("Trebinje — odgovara tvom interesu za vino i historiju")
 
 ### Stranica destinacije
