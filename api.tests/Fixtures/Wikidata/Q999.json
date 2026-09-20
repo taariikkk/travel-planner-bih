@@ -1,0 +1,8 @@
+{
+  "entities": {
+    "Q999": {
+      "labels": { "en": { "value": "Foreign place" } },
+      "claims": { "P17": [{ "mainsnak": { "datavalue": { "value": { "id": "Q30" } } } }] }
+    }
+  }
+}

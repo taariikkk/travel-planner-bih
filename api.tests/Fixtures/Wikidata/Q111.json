@@ -1,0 +1,17 @@
+{
+  "entities": {
+    "Q111": {
+      "labels": { "bs": { "value": "Test Grad" }, "en": { "value": "Test City" } },
+      "sitelinks": { "bswiki": { "title": "Test Grad" }, "enwiki": { "title": "Test City" } },
+      "claims": {
+        "P17": [{ "mainsnak": { "datavalue": { "value": { "id": "Q225" } } } }],
+        "P131": [{ "mainsnak": { "datavalue": { "value": { "id": "Q300" } } } }],
+        "P31": [{ "mainsnak": { "datavalue": { "value": { "id": "Q515" } } } }],
+        "P625": [{ "mainsnak": { "datavalue": { "value": { "latitude": 43.859, "longitude": 18.429 } } } }],
+        "P2044": [{ "mainsnak": { "datavalue": { "value": { "amount": "+518" } } } }],
+        "P1082": [{ "mainsnak": { "datavalue": { "value": { "amount": "+275524" } } } }],
+        "P18": [{ "mainsnak": { "datavalue": { "value": "Sarajevo.jpg" } } }]
+      }
+    }
+  }
+}

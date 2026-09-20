@@ -121,7 +121,7 @@ idu uz Overpass, odnosno Smještaj.
 Cilj: širina i činjenice iz API-ja, kvalitet kroz ručni sloj. Uvoz radi na
 zahtjev sa TTL kešom, bez Hangfirea.
 
-- [ ] `IDestinationDataProvider` interfejs + `WikidataProvider` (pretraga, koordinate,
+- [x] `IDestinationDataProvider` interfejs + `WikidataProvider` (pretraga, koordinate,
       tip, nadmorska visina, stanovnici)
 - [ ] `WikipediaSummaryProvider` (opis na bosanskom, fallback engleski; čuva izvor i URL)
 - [ ] `IImageProvider` + implementacija (Wikimedia Commons ili Unsplash) sa atribucijom

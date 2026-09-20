@@ -1,0 +1,8 @@
+{
+  "entities": {
+    "Q300": {
+      "labels": { "bs": { "value": "Kanton test" }, "en": { "value": "Test Canton" } },
+      "claims": {}
+    }
+  }
+}

@@ -25,4 +25,8 @@
     <ProjectReference Include="../api/TravelPlanner.WebAPI/TravelPlanner.WebAPI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Fixtures/**/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
