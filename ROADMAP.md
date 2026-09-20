@@ -83,13 +83,26 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
       koja se povezuju u kasnijim sedmicama
 - [x] Ispravke sadržaja: neutralni naslov "O destinaciji: Bjelašnica", regija Bjelašnice
       (Sarajevski kanton, ne Centralna Bosna)
+- [ ] Redizajn rasporeda stranice destinacije po uzoru na referencu (u postojećem stilu,
+      bez kartica sa sjenkama): hero blok sa slikom, nazivom i osnovnom statistikom
+      (stanovnici, nadmorska visina, region, udaljenost od Sarajeva), srce za omiljeno,
+      zatim blokovi "O destinaciji", "Vrijeme", "Brze činjenice" i "Top mjesta"
+- [ ] Prikaz broja stanovnika (kad postoji `Population`)
+- [ ] "Top mjesta" prikazuju sliku mjesta kad postoji
 
 ### Navigacija i layout
-- [ ] Zajednički layout (Next.js) sa navbarom na svim stranicama
-- [ ] Javni navbar: Kako funkcioniše, Istraži, Prijava, Kreiraj račun, BS/EN
-- [ ] Prijavljeni navbar: Istraži, Preporuke, Moja putovanja, profil/odjava, BS/EN
-- [ ] Aktivno stanje linka, hamburger meni na mobilnom
-- [ ] "Moja putovanja" ima smisleno prazno stanje dok Trip modul ne postoji
+Dva layouta u postojećem stilu (krem, zelena, serifni naslovi): javni sa gornjim
+navbarom i aplikacijski sa lijevim sidebarom nakon prijave.
+
+- [ ] Layout za javne stranice (Next.js) sa gornjim navbarom: Kako funkcioniše,
+      Istraži, Prijava, Kreiraj račun, BS/EN
+- [ ] Aplikacijski layout za prijavljene korisnike sa lijevim sidebarom: Dashboard,
+      Destinacije (Istraži), Preporuke, Moja putovanja, Budžet, Postavke; u dnu blok
+      sa korisnikom (ime, email, odjava) i BS/EN prekidač
+- [ ] Aktivno stanje linka; na mobilnom se sidebar pretvara u hamburger/drawer
+- [ ] Smislena prazna stanja za stavke čiji moduli još ne postoje (Dashboard,
+      "Moja putovanja", "Budžet")
+- [ ] Stranica Postavke: profil i preferencije (koristi postojeći `GET/PUT /api/users/me`)
 
 ### Model podataka — proširenje (nova migracija, ne mijenjati postojeće)
 Ostale tabele dodaju se tek kad zatrebaju: `ShareLink` u Sedmici 5-6,
@@ -163,7 +176,8 @@ tabelu stvarnim podacima, Mapbox samo prikazuje ono što je već u bazi.
 Mapbox rezultati geocodinga se ne pohranjuju u bazu.
 
 - [ ] Proširenje `Place` (nova migracija): opis, adresa, vrsta kuhinje, cjenovni nivo,
-      web/kontakt link, `ExternalId` (OSM id), datum zadnje provjere
+      web/kontakt link, `ExternalId` (OSM id), datum zadnje provjere, opciona slika
+      sa atribucijom (autor, licenca, URL)
 - [ ] `IPlacesProvider` interfejs (provider abstraction pattern)
 - [ ] `OverpassPlacesProvider` implementacija — upit za restorane/atrakcije po gradu
 - [ ] Keširanje Overpass odgovora u bazi (izbjeći ponovljene pozive za istu
@@ -194,7 +208,7 @@ Ne radi se prije nego što Overpass uvoz radi i vidiš šta nedostaje.
 - [ ] Prikaz prognoze i prosječne temperature na stranici destinacije
 
 **Definicija završenosti Sedmice 3-4**: korisnik odgovori na wizard, dobije
-rangirane preporuke sa objašnjenjem, koristi navbar, na stranici "Istraži"
+rangirane preporuke sa objašnjenjem, koristi navigaciju (navbar, nakon prijave sidebar), na stranici "Istraži"
 pretražuje bilo koji grad/planinu/selo i pregleda destinacije, otvori stranicu
 destinacije sa opisom, mapom (u dizajn sistemu, sa markerima i clusteringom),
 stvarnim obližnjim mjestima iz OSM-a i vremenskom prognozom, i može sačuvati
@@ -211,6 +225,7 @@ omiljeno mjesto.
 - [ ] `DELETE /api/trips/{id}`
 - [ ] Autorizacija: korisnik vidi/mijenja samo svoja putovanja
 - [ ] Povezati dugme "Dodaj u plan" sa Istraži i stranice destinacije na Trip
+- [ ] Pretraga s datumima na dashboardu (odredište + od/do) kreira putovanje i otvara ga za uređivanje
 
 ### Itinerar dan-po-dan
 - [ ] `POST /api/trips/{id}/days` — dodavanje dana
@@ -236,8 +251,12 @@ omiljeno mjesto.
 - [ ] Prikaz prijedloga smještaja na stranici destinacije (i na mapi)
 
 ### Dashboard i dijeljenje
-- [ ] Stranica `/dashboard`: nadolazeće putovanje, itinerer, sačuvana mjesta, sažetak budžeta
-      (sa smislenim praznim stanjima)
+- [ ] `GET /api/dashboard` — sažetak za prijavljenog korisnika (nadolazeće putovanje,
+      broj sačuvanih mjesta, dana do polaska, ukupni budžet u KM)
+- [ ] Stranica `/dashboard` u aplikacijskom layoutu, po uzoru na referencu (u postojećem
+      stilu): pozdrav, pretraga s datumima (od/do), kartice sa sažetkom, blokovi
+      "Nadolazeće putovanje" (slika, naziv, datumi), "Moj itinerer" (timeline po danima)
+      i "Sačuvana mjesta" (sa smislenim praznim stanjima)
 - [ ] `ShareLink` entitet (TripId, token, dozvola read-only/edit) i share link ka
       putovanju (read-only) — bez real-time infrastrukture
 
@@ -303,6 +322,7 @@ i deployovan je:
 - [ ] Real-time saradnja (SignalR) — pozivanje saputnika, komentari, glasanje
 - [ ] Hotel API integracija (zamjena ručnog dataset-a)
 - [ ] Kurirane aktivnosti/ture (rafting Neretva, ture Mostar/Sarajevo)
+- [ ] Obavijesti (zvonce u zaglavlju aplikacije)
 - [ ] Background uvoz/osvježavanje podataka (Hangfire)
 - [ ] Regionalno proširenje — Hrvatska, Srbija, Crna Gora (ista arhitektura, novi seed podaci)
 - [ ] Flight search (Duffel sandbox ili Travelpayouts) — samo ako treba za AI demo

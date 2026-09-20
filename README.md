@@ -44,7 +44,7 @@ Banja Luka, Travnik/Počitelj/Višegrad/Jajce.
 | Oblast | Opis | Faza |
 |---|---|---|
 | Identity | Registracija, prijava, profil, preferencije | MVP |
-| Navigacija | Zajednički navbar na svim stranicama | MVP |
+| Navigacija | Gornji navbar na javnim stranicama, lijevi sidebar nakon prijave | MVP |
 | Lokalizacija | Bosanski i engleski jezik (BS/EN) | MVP |
 | Discover | Wizard preferencija i preporuke sa objašnjenjem | MVP |
 | Istraži | Pretraga grada/planine/sela, pregled destinacija sa opisima, filteri po tipu i regiji | MVP |
@@ -54,7 +54,7 @@ Banja Luka, Travnik/Počitelj/Višegrad/Jajce.
 | Maps | Mapbox prikaz, rute, udaljenosti unutar BiH i do graničnih gradova (Dubrovnik, Split, Beograd) | MVP |
 | Trips | Kreiranje putovanja, datumi, putnici, itinerer | MVP |
 | Itinerary | Dani, aktivnosti, ručno uređivanje, prikaz rute | MVP |
-| Dashboard | Pregled nakon prijave: putovanje, itinerer, sačuvana mjesta, budžet | MVP |
+| Dashboard | Pretraga s datumima, kartice sa sažetkom, nadolazeće putovanje, itinerer, sačuvana mjesta | MVP |
 | Weather | Open-Meteo prognoza za sve BiH lokacije | MVP |
 | Budget | Procjena i praćenje troškova u KM/EUR | MVP |
 | AI asistent | Tool-calling nad podacima iz baze + live mapa/vrijeme | MVP |
@@ -207,7 +207,7 @@ Grubi pregled po sedmicama:
 | Period | Fokus |
 |---|---|
 | Sedmica 1-2 | Temelj — setup, baza, autentifikacija, seed podaci |
-| Sedmica 3-4 | Discovery i mape — wizard, preporuke, navbar, uvoz podataka, Istraži i pretraga, mjesta, vrijeme |
+| Sedmica 3-4 | Discovery i mape — wizard, preporuke, navigacija, uvoz podataka, Istraži i pretraga, mjesta, vrijeme |
 | Sedmica 5-6 | Trip planner — itinerer, budžet, smještaj, dashboard |
 | Sedmica 7-8 | AI asistent, testovi, deployment, portfolio materijal |
 | Poslije MVP-a | Puna saradnja (V2), hotel API, regionalno proširenje |
@@ -224,7 +224,7 @@ Grubi pregled po sedmicama:
 - Vremenska prognoza je dostupna za odabrane datume/lokacije
 - Korisnik može pratiti budžet u KM
 - AI asistent može predložiti i izmijeniti itinerer koristeći stvarne BiH podatke
-- Aplikacija je dvojezična (BS/EN) i ima zajednički navbar
+- Aplikacija je dvojezična (BS/EN) i ima navigaciju (navbar na javnim stranicama, sidebar nakon prijave)
 - Aplikacija radi produkcijski (deployed), uz minimalne troškove
 - README i demo materijal jasno pokazuju BiH fokus kao svjesnu odluku
 

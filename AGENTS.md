@@ -126,13 +126,14 @@ Hercegovina, Neum, Jahorina i Bjelašnica, Banja Luka, Travnik/Počitelj/Višegr
 ## Frontend i dizajn
 
 **Rute (planirane):** početna, wizard/preporuke (postojeća ruta), `/explore`
-(stranica "Istraži"), `/destinations/[slug]`, `/dashboard`, `/trips` i
-`/trips/[id]` (sedmica 5-6).
+(stranica "Istraži"), `/destinations/[slug]`, `/settings`, `/dashboard`, `/trips` i
+`/trips/[id]` (dashboard i trips u sedmici 5-6).
 
-**Navigacija:** jedan zajednički layout sa navbarom na svim stranicama. Javni
-korisnik vidi: Kako funkcioniše, Istraži, Prijava, Kreiraj račun. Prijavljeni
-korisnik vidi: Istraži, Preporuke, Moja putovanja, profil/odjava. BS/EN prekidač
-je u navbaru. Na mobilnom hamburger meni.
+**Navigacija:** dva layouta. Javne stranice imaju gornji navbar (Kako funkcioniše,
+Istraži, Prijava, Kreiraj račun, BS/EN). Nakon prijave aplikacija koristi lijevi
+sidebar (Dashboard, Destinacije/Istraži, Preporuke, Moja putovanja, Budžet, Postavke)
+sa blokom korisnika (ime, email, odjava) u dnu i BS/EN prekidačem. Na mobilnom se
+sidebar pretvara u hamburger/drawer. Moduli koji još ne postoje imaju smisleno prazno stanje.
 
 **Dizajn sistem — obavezno očuvati postojeći izgled:**
 
@@ -147,6 +148,10 @@ je u navbaru. Na mobilnom hamburger meni.
 Nove stranice koriste postojeće Tailwind tokene (boje, fontovi, razmaci). **Ne
 uvoditi nove boje, fontove ni stilove kartica.** Eventualne referentne slike
 tuđih aplikacija služe samo za strukturu i funkcionalnost, ne za izgled.
+Raspored dashboarda (pretraga s datumima, kartice sa sažetkom, blokovi Nadolazeće
+putovanje / Itinerer / Sačuvana mjesta) i stranice destinacije (hero sa slikom i
+statistikom, zatim O destinaciji / Vrijeme / Brze činjenice / Top mjesta) prati
+referentne slike, ali isključivo u postojećem vizuelnom stilu.
 
 **Lokalizacija:** aplikacija je dvojezična (BS/EN). Svi korisnički tekstovi idu
 kroz i18n rječnik, ne hardkodirani u komponentama. Uvezeni opisi se prikazuju na
