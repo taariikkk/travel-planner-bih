@@ -21,6 +21,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("postgis");
+        modelBuilder.HasPostgresExtension("unaccent");
+        modelBuilder.HasPostgresExtension("pg_trgm");
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -36,14 +38,21 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         {
             entity.ToTable("Destination");
             entity.Property(destination => destination.Name).IsRequired();
+            entity.Property(destination => destination.Type).IsRequired().HasMaxLength(16);
+            entity.Property(destination => destination.Source).IsRequired().HasMaxLength(16);
+            entity.Property(destination => destination.ExternalId).HasMaxLength(32);
             entity.Property(destination => destination.Region).IsRequired();
             entity.Property(destination => destination.Description).IsRequired();
+            entity.Property(destination => destination.DescriptionLanguage).HasMaxLength(8);
             entity.Property(destination => destination.BestTimeToVisit).IsRequired();
             entity.Property(destination => destination.BudgetTier).IsRequired().HasMaxLength(16);
             entity.Property(destination => destination.SuggestedStayMinDays).IsRequired();
             entity.Property(destination => destination.SuggestedStayMaxDays).IsRequired();
             ConfigureStringList(entity.Property(destination => destination.BestSeasons));
             ConfigureStringList(entity.Property(destination => destination.Tags));
+            ConfigureStringList(entity.Property(destination => destination.ManualOverrideFields));
+            entity.HasIndex(destination => destination.ExternalId).IsUnique().HasFilter("\"ExternalId\" IS NOT NULL");
+            entity.HasIndex(destination => destination.Name).HasMethod("gin").HasOperators("gin_trgm_ops");
             entity.HasData(DestinationSeedData.Destinations);
         });
 

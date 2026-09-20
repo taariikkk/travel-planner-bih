@@ -52,16 +52,27 @@ internal static class DestinationSeedData
         {
             Id = Guid.Parse(id),
             Name = name,
+            Type = GetType(name),
+            Source = "manual",
             Region = name == "Bjelašnica" ? "Sarajevski kanton" : region,
             Description = description,
+            DescriptionLanguage = "bs",
             BestTimeToVisit = bestTimeToVisit,
             BudgetTier = metadata.BudgetTier,
             SuggestedStayMinDays = metadata.MinDays,
             SuggestedStayMaxDays = metadata.MaxDays,
             BestSeasons = metadata.Seasons.ToList(),
-            Tags = tags.ToList()
+            Tags = tags.ToList(),
+            ManualOverrideFields = []
         };
     }
+
+    private static string GetType(string destinationName) => destinationName switch
+    {
+        "Jahorina" or "Bjelašnica" => "planina",
+        "Neum" => "ostalo",
+        _ => "grad"
+    };
 
     private static DestinationMetadata GetMetadata(string destinationName) => destinationName switch
     {

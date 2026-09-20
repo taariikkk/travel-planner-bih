@@ -109,12 +109,12 @@ Ostale tabele dodaju se tek kad zatrebaju: `ShareLink` u Sedmici 5-6,
 `AiConversation`/`AiMessage` u Sedmici 7-8. `Place` i `Accommodation` proširenja
 idu uz Overpass, odnosno Smještaj.
 
-- [ ] `Destination`: Type (grad/planina/selo/…), Source, ExternalId (Wikidata Q-id),
+- [x] `Destination`: Type (grad/planina/selo/…), Source, ExternalId (Wikidata Q-id),
       ImportedAt, ElevationM, Population, ImageUrl + atribucija (autor, licenca, URL),
       izvor i jezik opisa
-- [ ] Odvojena override polja/flag po polju tako da ručne izmjene nadjačavaju uvoz;
+- [x] Odvojena override polja/flag po polju tako da ručne izmjene nadjačavaju uvoz;
       postojeći seed zapisi dobijaju `Source = manual`
-- [ ] PostgreSQL ekstenzije `unaccent` i `pg_trgm` u migraciji (+ trigram indeks na nazivu)
+- [x] PostgreSQL ekstenzije `unaccent` i `pg_trgm` u migraciji (+ trigram indeks na nazivu)
 - [ ] `SavedPlace` entitet (UserId, DestinationId/PlaceId, CreatedAt) — uz spremanje omiljenih
 
 ### Uvoz podataka iz API-ja (API-first)

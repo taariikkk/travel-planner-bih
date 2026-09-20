@@ -3,6 +3,8 @@ using TravelPlanner.Application.Interfaces;
 using TravelPlanner.Application.Exceptions;
 using TravelPlanner.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Api.Infrastructure.Persistence;
 using Xunit;
@@ -55,7 +57,20 @@ public sealed class ApplicationDbContextModelTests
         Assert.Equal("text[]", user.FindProperty(nameof(User.Preferences))!.GetColumnType());
         Assert.Equal("text[]", destination.FindProperty(nameof(Destination.Tags))!.GetColumnType());
         Assert.Equal("text[]", destination.FindProperty(nameof(Destination.BestSeasons))!.GetColumnType());
+        Assert.Equal("text[]", destination.FindProperty(nameof(Destination.ManualOverrideFields))!.GetColumnType());
+        Assert.True(destination.FindProperty(nameof(Destination.ExternalId))!.IsNullable);
+        Assert.True(destination.FindProperty(nameof(Destination.Population))!.IsNullable);
         Assert.Equal(16, destination.FindProperty(nameof(Destination.BudgetTier))!.GetMaxLength());
+        Assert.Contains(destination.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(Destination.ExternalId)]));
+        Assert.Single(destination.GetIndexes(), index => !index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(Destination.Name)]));
+        var designTimeDestination = context.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Destination))!;
+        var seededDestinations = designTimeDestination.GetSeedData();
+        Assert.NotEmpty(seededDestinations);
+        Assert.All(seededDestinations, seed =>
+        {
+            Assert.Equal("manual", seed[nameof(Destination.Source)]);
+            Assert.Equal("bs", seed[nameof(Destination.DescriptionLanguage)]);
+        });
         Assert.Equal("geometry (point,4326)", place.FindProperty(nameof(Place.Location))!.GetColumnType());
         Assert.Contains(translation.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(DestinationTranslation.DestinationId), nameof(DestinationTranslation.LanguageCode)]));
         Assert.Equal("numeric(18,2)", expense.FindProperty(nameof(Expense.AmountKM))!.GetColumnType());
