@@ -115,7 +115,7 @@ idu uz Overpass, odnosno Smještaj.
 - [x] Odvojena override polja/flag po polju tako da ručne izmjene nadjačavaju uvoz;
       postojeći seed zapisi dobijaju `Source = manual`
 - [x] PostgreSQL ekstenzije `unaccent` i `pg_trgm` u migraciji (+ trigram indeks na nazivu)
-- [ ] `SavedPlace` entitet (UserId, DestinationId/PlaceId, CreatedAt) — uz spremanje omiljenih
+- [x] `SavedPlace` entitet (UserId, DestinationId/PlaceId, CreatedAt) — uz spremanje omiljenih
 
 ### Uvoz podataka iz API-ja (API-first)
 Cilj: širina i činjenice iz API-ja, kvalitet kroz ručni sloj. Uvoz radi na

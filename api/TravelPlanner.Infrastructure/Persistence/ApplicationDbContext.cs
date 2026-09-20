@@ -17,6 +17,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Accommodation> Accommodations => Set<Accommodation>();
     public DbSet<WeatherSnapshot> WeatherSnapshots => Set<WeatherSnapshot>();
+    public DbSet<SavedPlace> SavedPlaces => Set<SavedPlace>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -132,6 +133,24 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(snapshot => snapshot.RawData).IsRequired();
             entity.HasOne(snapshot => snapshot.Destination).WithMany(destination => destination.WeatherSnapshots)
                 .HasForeignKey(snapshot => snapshot.DestinationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SavedPlace>(entity =>
+        {
+            entity.ToTable("SavedPlace", table => table.HasCheckConstraint(
+                "CK_SavedPlace_ExactlyOneTarget",
+                "(\"DestinationId\" IS NOT NULL AND \"PlaceId\" IS NULL) OR (\"DestinationId\" IS NULL AND \"PlaceId\" IS NOT NULL)"));
+            entity.Property(savedPlace => savedPlace.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP").ValueGeneratedOnAdd();
+            entity.HasIndex(savedPlace => new { savedPlace.UserId, savedPlace.DestinationId }).IsUnique()
+                .HasFilter("\"DestinationId\" IS NOT NULL");
+            entity.HasIndex(savedPlace => new { savedPlace.UserId, savedPlace.PlaceId }).IsUnique()
+                .HasFilter("\"PlaceId\" IS NOT NULL");
+            entity.HasOne(savedPlace => savedPlace.User).WithMany(user => user.SavedPlaces)
+                .HasForeignKey(savedPlace => savedPlace.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(savedPlace => savedPlace.Destination).WithMany(destination => destination.SavedPlaces)
+                .HasForeignKey(savedPlace => savedPlace.DestinationId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(savedPlace => savedPlace.Place).WithMany(place => place.SavedPlaces)
+                .HasForeignKey(savedPlace => savedPlace.PlaceId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

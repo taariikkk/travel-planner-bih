@@ -31,4 +31,5 @@ public sealed class Destination
     public List<Accommodation> Accommodations { get; set; } = [];
     public List<WeatherSnapshot> WeatherSnapshots { get; set; } = [];
     public List<DestinationTranslation> Translations { get; set; } = [];
+    public List<SavedPlace> SavedPlaces { get; set; } = [];
 }

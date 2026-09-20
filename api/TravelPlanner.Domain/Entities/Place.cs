@@ -12,4 +12,5 @@ public sealed class Place
     public string Source { get; set; } = string.Empty;
     public Destination Destination { get; set; } = null!;
     public List<ItineraryItem> ItineraryItems { get; set; } = [];
+    public List<SavedPlace> SavedPlaces { get; set; } = [];
 }

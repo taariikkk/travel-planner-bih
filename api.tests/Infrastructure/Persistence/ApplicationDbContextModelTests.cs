@@ -39,6 +39,7 @@ public sealed class ApplicationDbContextModelTests
         Assert.Equal("Expense", context.Model.FindEntityType(typeof(Expense))!.GetTableName());
         Assert.Equal("Accommodation", context.Model.FindEntityType(typeof(Accommodation))!.GetTableName());
         Assert.Equal("WeatherSnapshot", context.Model.FindEntityType(typeof(WeatherSnapshot))!.GetTableName());
+        Assert.Equal("SavedPlace", context.Model.FindEntityType(typeof(SavedPlace))!.GetTableName());
     }
 
     [Fact]
@@ -53,6 +54,7 @@ public sealed class ApplicationDbContextModelTests
         var expense = context.Model.FindEntityType(typeof(Expense))!;
         var tripDay = context.Model.FindEntityType(typeof(TripDay))!;
         var itineraryItem = context.Model.FindEntityType(typeof(ItineraryItem))!;
+        var savedPlace = context.Model.FindEntityType(typeof(SavedPlace))!;
 
         Assert.Equal("text[]", user.FindProperty(nameof(User.Preferences))!.GetColumnType());
         Assert.Equal("text[]", destination.FindProperty(nameof(Destination.Tags))!.GetColumnType());
@@ -76,6 +78,11 @@ public sealed class ApplicationDbContextModelTests
         Assert.Equal("numeric(18,2)", expense.FindProperty(nameof(Expense.AmountKM))!.GetColumnType());
         Assert.Contains(tripDay.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(TripDay.TripId), nameof(TripDay.DayNumber)]));
         Assert.Contains(itineraryItem.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(ItineraryItem.TripDayId), nameof(ItineraryItem.Order)]));
+        Assert.Equal("CURRENT_TIMESTAMP", savedPlace.FindProperty(nameof(SavedPlace.CreatedAt))!.GetDefaultValueSql());
+        Assert.Contains(savedPlace.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(SavedPlace.UserId), nameof(SavedPlace.DestinationId)]));
+        Assert.Contains(savedPlace.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(SavedPlace.UserId), nameof(SavedPlace.PlaceId)]));
+        var designTimeSavedPlace = context.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(SavedPlace))!;
+        Assert.Contains(designTimeSavedPlace.GetCheckConstraints(), constraint => constraint.Name == "CK_SavedPlace_ExactlyOneTarget");
     }
 
     private static ApplicationDbContext CreateContext()

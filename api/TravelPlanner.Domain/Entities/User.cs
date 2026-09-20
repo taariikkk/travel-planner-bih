@@ -15,4 +15,6 @@ public sealed class User
     public List<string> Preferences { get; set; } = [];
 
     public List<Trip> Trips { get; set; } = [];
+
+    public List<SavedPlace> SavedPlaces { get; set; } = [];
 }
