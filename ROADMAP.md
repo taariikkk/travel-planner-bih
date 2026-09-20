@@ -92,14 +92,17 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
 - [ ] "Moja putovanja" ima smisleno prazno stanje dok Trip modul ne postoji
 
 ### Model podataka — proširenje (nova migracija, ne mijenjati postojeće)
+Ostale tabele dodaju se tek kad zatrebaju: `ShareLink` u Sedmici 5-6,
+`AiConversation`/`AiMessage` u Sedmici 7-8. `Place` i `Accommodation` proširenja
+idu uz Overpass, odnosno Smještaj.
+
 - [ ] `Destination`: Type (grad/planina/selo/…), Source, ExternalId (Wikidata Q-id),
       ImportedAt, ElevationM, Population, ImageUrl + atribucija (autor, licenca, URL),
-      SeasonMonths (mjeseci sezone), IsFeatured
-- [ ] Odvojena override polja/flag po polju tako da ručne izmjene nadjačavaju uvoz
-- [ ] `SavedPlace` entitet (UserId, DestinationId/PlaceId, CreatedAt)
-- [ ] `ShareLink` entitet (TripId, token, dozvola read-only/edit) — za MVP saradnju
-- [ ] `AiConversation` i `AiMessage` entiteti (za AI conversation log)
-- [ ] PostgreSQL ekstenzije `unaccent` i `pg_trgm` u migraciji
+      izvor i jezik opisa
+- [ ] Odvojena override polja/flag po polju tako da ručne izmjene nadjačavaju uvoz;
+      postojeći seed zapisi dobijaju `Source = manual`
+- [ ] PostgreSQL ekstenzije `unaccent` i `pg_trgm` u migraciji (+ trigram indeks na nazivu)
+- [ ] `SavedPlace` entitet (UserId, DestinationId/PlaceId, CreatedAt) — uz spremanje omiljenih
 
 ### Uvoz podataka iz API-ja (API-first)
 Cilj: širina i činjenice iz API-ja, kvalitet kroz ručni sloj. Uvoz radi na
@@ -112,21 +115,25 @@ zahtjev sa TTL kešom, bez Hangfirea.
 - [ ] Servis za uvoz: prvi pristup mjestu → povuci, spremi, zabilježi `ImportedAt`;
       osvježi kad TTL istekne
 - [ ] Pravilo prioriteta: ručna vrijednost > uvezena; ponovni uvoz nikad ne prepisuje ručna polja
+- [ ] Uvezene destinacije i preporuke: tagovi se izvode iz tipa mjesta, a budžet,
+      tipično trajanje i sezona dobijaju podrazumijevane vrijednosti (konfiguracija,
+      ne hardkodirano) uz ručnu korekciju; destinacija bez dovoljno podataka ne
+      učestvuje u preporukama wizarda
 - [ ] Opisan `User-Agent` i poštovanje rate limita za Wikimedia pozive
-- [ ] Kontrola kvaliteta: zapis bez opisa ili sa preslabim opisom ne ulazi u
-      "popularno/istaknuto"
-- [ ] Prikaz atribucije u UI-ju (Wikipedia tekst, slike)
-- [ ] Opciono: komanda za pred-uvoz liste popularnih mjesta
+- [ ] Kontrola kvaliteta: zapis bez opisa ili sa preslabim opisom ne ulazi u preporuke;
+      UI prikazuje smisleno prazno stanje umjesto lošeg sadržaja
+- [ ] Prikaz slike i atribucije (Wikipedia tekst, slike) i nadmorske visine iz Wikidata
+      na stranici destinacije
+- [ ] Opciono: komanda za pred-uvoz liste destinacija
 - [ ] Unit testovi (mapiranje odgovora, prioritet ručnih polja, TTL) i integration test adaptera
 
 ### Pretraga i "Istraži"
 - [ ] `GET /api/search?q=` — prvo lokalna baza (`unaccent` + `pg_trgm`), zatim Wikidata
       fallback ako je rezultata premalo; filter po tipu
 - [ ] Test: "Bjelasnica" pronalazi "Bjelašnica"
-- [ ] `GET /api/destinations/popular?month=` — sezona iz tagova i klimatskih podataka
-      + `IsFeatured`; izračun sezone (Open-Meteo klimatski prosjeci) i ručna korekcija
-- [ ] Frontend: stranica `/explore` — "Popularno ovog mjeseca", search bar, filteri po
-      tipu, lista destinacija u postojećem editorijalnom stilu (bez kartica sa sjenkama)
+- [ ] Frontend: stranica `/explore` — search bar, filteri po tipu i regiji, lista
+      destinacija (kurirane prve, zatim uvezene) u postojećem editorijalnom stilu
+      (bez kartica sa sjenkama)
 - [ ] Prikaz punog opisa i slike destinacije sa atribucijom
 - [ ] Dugme "Dodaj u plan" (skriveno/onemogućeno dok Trip modul ne postoji)
 - [ ] Spremanje omiljenih: `SavedPlace` endpointi (dodaj/ukloni/lista) i UI (zahtijeva prijavu)
@@ -155,25 +162,40 @@ Ovo je zaseban podatkovni sloj od Mapboxa: Overpass popunjava `Place`
 tabelu stvarnim podacima, Mapbox samo prikazuje ono što je već u bazi.
 Mapbox rezultati geocodinga se ne pohranjuju u bazu.
 
+- [ ] Proširenje `Place` (nova migracija): opis, adresa, vrsta kuhinje, cjenovni nivo,
+      web/kontakt link, `ExternalId` (OSM id), datum zadnje provjere
 - [ ] `IPlacesProvider` interfejs (provider abstraction pattern)
 - [ ] `OverpassPlacesProvider` implementacija — upit za restorane/atrakcije po gradu
 - [ ] Keširanje Overpass odgovora u bazi (izbjeći ponovljene pozive za istu
       destinaciju — Overpass javni server ima rate limit)
 - [ ] Fallback na alternativni Overpass mirror (npr. `overpass.kumi.systems`)
       ako glavni endpoint ne odgovori — opciono, ne blokira MVP
-- [ ] Ručno dodane "must-see" lokacije za prioritetne destinacije (30-50 po gradu)
-      kao dopuna Overpass podacima gdje su rijetki/nepotpuni (`Source = manual`)
+- [ ] Povezivanje ručnog zapisa sa OSM zapisom preko `ExternalId`: ručni zapis
+      nadjačava uvezeni, bez duplikata
+- [ ] JSON seeder za ručne lokacije (`manual-places.json`): idempotentan, validira
+      ulaz i učitava zapise sa `Source = manual`; podaci žive u JSON fajlu, ne u C# kodu
+
+### Ručni sadržaj (radiš ti, ne Codex)
+Ne radi se prije nego što Overpass uvoz radi i vidiš šta nedostaje.
+
+- [ ] Must-see lokacije i restorani (30-50 po prioritetnom gradu) u `manual-places.json`
+      — opisi svojim riječima, koordinate iz OSM-a ili sa mape, bez kopiranja tekstova
+      sa Google Mapsa, Bookinga ili TripAdvisora
+- [ ] Kratki opisi na BS i EN za kurirane destinacije tamo gdje je Wikipedia slaba
+- [ ] Izbor glavne slike za kurirane destinacije
+- [ ] Korekcija tagova, budžeta i tipičnog trajanja za kurirane destinacije
+- [ ] Pregled uvezenih opisa (ispravke ručnim vrijednostima)
 
 ### Open-Meteo integracija
 - [ ] `IWeatherProvider` interfejs
 - [ ] `OpenMeteoWeatherProvider` implementacija (prognoza + mjesečni klimatski prosjeci)
 - [ ] Endpoint `GET /api/weather?lat=&lng=&date=`
 - [ ] Keširanje u `WeatherSnapshot` sa osvježavanjem po isteku TTL-a (na zahtjev, bez Hangfirea)
-- [ ] Prikaz prognoze na stranici destinacije
+- [ ] Prikaz prognoze i prosječne temperature na stranici destinacije
 
 **Definicija završenosti Sedmice 3-4**: korisnik odgovori na wizard, dobije
-rangirane preporuke sa objašnjenjem, koristi navbar, na stranici "Istraži" vidi
-popularna mjesta mjeseca i pretražuje bilo koji grad/planinu/selo, otvori stranicu
+rangirane preporuke sa objašnjenjem, koristi navbar, na stranici "Istraži"
+pretražuje bilo koji grad/planinu/selo i pregleda destinacije, otvori stranicu
 destinacije sa opisom, mapom (u dizajn sistemu, sa markerima i clusteringom),
 stvarnim obližnjim mjestima iz OSM-a i vremenskom prognozom, i može sačuvati
 omiljeno mjesto.
@@ -204,16 +226,20 @@ omiljeno mjesto.
 - [ ] Frontend: prikaz budžeta sa opcionim EUR prikazom (fiksni kurs 1,95583)
 
 ### Smještaj
+- [ ] Proširenje `Accommodation` (nova migracija): koordinate (PostGIS point), opis,
+      slika, oznaka da je cijena okvirna, datum zadnje provjere cijene
 - [ ] `IHotelProvider` interfejs sa implementacijom nad kuriranim datasetom
-- [ ] Ručno kuriran `Accommodation` seed dataset (20-40 objekata: Sarajevo, Mostar,
-      Neum, Trebinje, Jahorina/Bjelašnica)
+- [ ] JSON seeder za smještaj (`accommodations.json`), idempotentan, sa validacijom
+- [ ] Ručno kuriran `Accommodation` dataset (20-40 objekata: Sarajevo, Mostar,
+      Neum, Trebinje, Jahorina/Bjelašnica) — radiš ti, opisi svojim riječima
 - [ ] Endpoint `GET /api/accommodations?destinationId=`
-- [ ] Prikaz prijedloga smještaja na stranici destinacije
+- [ ] Prikaz prijedloga smještaja na stranici destinacije (i na mapi)
 
 ### Dashboard i dijeljenje
 - [ ] Stranica `/dashboard`: nadolazeće putovanje, itinerer, sačuvana mjesta, sažetak budžeta
       (sa smislenim praznim stanjima)
-- [ ] Share link ka putovanju (read-only, `ShareLink`) — bez real-time infrastrukture
+- [ ] `ShareLink` entitet (TripId, token, dozvola read-only/edit) i share link ka
+      putovanju (read-only) — bez real-time infrastrukture
 
 ### UI polish
 - [ ] Responzivan dizajn za mobilne uređaje (osnovni nivo — nije V4 native app)
@@ -238,7 +264,7 @@ putovanje linkom — sve kroz responzivan UI.
   - [ ] `get_trip` / `update_itinerary`
   - [ ] `add_expense`
 - [ ] Endpoint `POST /api/ai/chat` — tool-calling loop (poziv modela → izvršenje alata → povratak rezultata modelu)
-- [ ] Čuvanje AI conversation log-a u bazi (`AiConversation`, `AiMessage`)
+- [ ] `AiConversation` i `AiMessage` entiteti i čuvanje AI conversation log-a u bazi
 
 ### Frontend AI asistent
 - [ ] Chat komponenta na stranici putovanja ("Isplaniraj mi 2 dana u Mostaru")
@@ -277,7 +303,6 @@ i deployovan je:
 - [ ] Real-time saradnja (SignalR) — pozivanje saputnika, komentari, glasanje
 - [ ] Hotel API integracija (zamjena ručnog dataset-a)
 - [ ] Kurirane aktivnosti/ture (rafting Neretva, ture Mostar/Sarajevo)
-- [ ] Popularnost iz stvarnih podataka (broj pregleda/spremanja) kao dodatni signal
 - [ ] Background uvoz/osvježavanje podataka (Hangfire)
 - [ ] Regionalno proširenje — Hrvatska, Srbija, Crna Gora (ista arhitektura, novi seed podaci)
 - [ ] Flight search (Duffel sandbox ili Travelpayouts) — samo ako treba za AI demo

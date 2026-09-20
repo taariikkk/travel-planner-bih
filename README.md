@@ -1,8 +1,8 @@
 # Travel Planner — Bosna i Hercegovina Edition
 
 Full-stack platforma za planiranje putovanja fokusirana na Bosnu i Hercegovinu.
-Otkrivanje destinacija (preporuke prema preferencijama, pretraga i popularna
-mjesta mjeseca), planiranje itinerera dan-po-dan, interaktivna mapa sa
+Otkrivanje destinacija (preporuke prema preferencijama, pretraga i pregled
+destinacija), planiranje itinerera dan-po-dan, interaktivna mapa sa
 rutama, budžetiranje u KM/EUR, i AI asistent koji koristi tool-calling nad
 stvarnim podacima o BiH.
 
@@ -35,7 +35,7 @@ regiju (Hrvatska, Srbija, Crna Gora) kasnije, koristeći istu arhitekturu.
 (Hrvatska, Srbija, Crna Gora), strani turisti, grupe koje dijele troškove.
 
 **Geografski obim MVP-a**: cijela BiH je pretraživa kroz uvoz podataka iz
-API-ja. Ručno kuriran sadržaj (istaknuta mjesta, ručne dopune, smještaj)
+API-ja. Ručno kuriran sadržaj (ručne dopune mjesta, smještaj)
 pokriva: Sarajevo, Mostar, Trebinje i Hercegovina, Neum, Jahorina i Bjelašnica,
 Banja Luka, Travnik/Počitelj/Višegrad/Jajce.
 
@@ -47,7 +47,7 @@ Banja Luka, Travnik/Počitelj/Višegrad/Jajce.
 | Navigacija | Zajednički navbar na svim stranicama | MVP |
 | Lokalizacija | Bosanski i engleski jezik (BS/EN) | MVP |
 | Discover | Wizard preferencija i preporuke sa objašnjenjem | MVP |
-| Istraži | Popularna mjesta tekućeg mjeseca, pretraga grada/planine/sela, opisi, filteri po tipu | MVP |
+| Istraži | Pretraga grada/planine/sela, pregled destinacija sa opisima, filteri po tipu i regiji | MVP |
 | Destinacija | Opis, brze činjenice, mapa, mjesta u blizini, vrijeme, smještaj | MVP |
 | Saved places | Spremanje omiljenih mjesta | MVP |
 | Places | Restorani, atrakcije (OSM uvoz + ručna dopuna) | MVP |
@@ -78,17 +78,17 @@ malog ručnog sloja (kvalitet i ispravke), a sve se čuva u vlastitoj bazi.
 | Restorani, atrakcije, vrhovi | OpenStreetMap / Overpass |
 | Vrijeme i klimatski prosjeci | Open-Meteo |
 | Smještaj | Ručno kuriran dataset |
-| Istaknuta mjesta, ispravke opisa | Ručno |
+| Ispravke opisa, tagovi i parametri kuriranih destinacija, dopuna mjesta | Ručno |
 
 Principi:
 
 - **Ručna vrijednost ima prednost** nad uvezenom i nikad se ne prepisuje ponovnim uvozom.
 - **Uvoz na zahtjev sa keširanjem** (TTL) u bazi — bez background poslova u MVP-u.
 - **Atribucija** izvora (Wikipedia, Commons, Unsplash) prikazana u UI-ju.
-- **Kontrola kvaliteta**: slab ili prazan sadržaj se ne izlaže kao istaknut.
+- **Kontrola kvaliteta**: slab ili prazan sadržaj se ne izlaže u preporukama.
 - **Pretraga** ignoriše dijakritike (č/ć/š/đ/ž) i prvo koristi lokalnu bazu.
-- **"Popularno ovog mjeseca"** se izvodi iz sezone destinacije (tagovi + klimatski
-  podaci) i ručne oznake "istaknuto", ne iz analitike.
+- **Ručni podaci** (mjesta, smještaj) čuvaju se u JSON fajlovima u repou i učitava ih
+  seeder; ručni zapis nadjačava uvezeni.
 
 ## Tehnološki stack
 
@@ -216,7 +216,7 @@ Grubi pregled po sedmicama:
 
 - Korisnik se može registrovati i podesiti preferencije
 - Sistem preporučuje BiH destinacije sa objašnjenjem
-- Stranica "Istraži" prikazuje popularna mjesta tekućeg mjeseca i omogućava pretragu grada, planine ili sela
+- Stranica "Istraži" omogućava pretragu grada, planine ili sela i pregled destinacija
 - Korisnik može otvoriti stranicu destinacije sa opisom, mapom, mjestima i prognozom
 - Korisnik može sačuvati omiljena mjesta
 - Korisnik može kreirati putovanje i itinerer dan-po-dan

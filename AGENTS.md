@@ -10,7 +10,7 @@ za arhitekturu i konvencije, ne mjesto za istoriju odluka (to ide u README).
 
 Travel Planner za Bosnu i Hercegovinu — MVP fokusiran na jedno tržište.
 Otkrivanje destinacija (preporuke kroz wizard + stranica "Istraži" sa pretragom
-i popularnim mjestima tekućeg mjeseca), planiranje itinerera dan-po-dan,
+i pregledom destinacija), planiranje itinerera dan-po-dan,
 interaktivna mapa, budžetiranje u KM/EUR, i AI asistent koji koristi
 tool-calling nad stvarnim podacima o BiH iz naše baze (ne izmišlja informacije).
 
@@ -76,7 +76,7 @@ destinacijama se **ne piše u kod**. Ide u bazu na jedan od dva načina:
 | Restorani, atrakcije, vrhovi, POI | OpenStreetMap / Overpass | Keširati u bazi |
 | Vrijeme, mjesečni klimatski prosjeci | Open-Meteo | Keširati u `WeatherSnapshot` |
 | Smještaj | Ručno kuriran dataset | Nema besplatnog API-ja, iza `IHotelProvider` |
-| "Istaknuto", ispravke opisa | Ručno | Mali urednički sloj |
+| Ispravke opisa, tagovi/budžet/trajanje kuriranih destinacija, dopuna mjesta | Ručno | Mali urednički sloj |
 
 **Pravila:**
 
@@ -86,9 +86,9 @@ destinacijama se **ne piše u kod**. Ide u bazu na jedan od dva načina:
   briše ni ne prepisuje ručno unesena polja (odvojena override polja ili flag po polju).
 - **Uvoz radi na zahtjev sa TTL kešom** (bez Hangfirea): prvi put kad se mjesto
   otvori ili pronađe, povuče se i spremi; poslije se osvježava kad TTL istekne.
-  Opciono: komanda/skripta za pred-uvoz liste popularnih mjesta.
-- **Kontrola kvaliteta**: zapis bez opisa ili sa preslabim opisom ne prikazuje se
-  kao "popularno"/istaknuto; UI mora imati smislen prazan prikaz umjesto lošeg sadržaja.
+  Opciono: komanda/skripta za pred-uvoz liste destinacija.
+- **Kontrola kvaliteta**: zapis bez opisa ili sa preslabim opisom ne ulazi u
+  preporuke; UI mora imati smislen prazan prikaz umjesto lošeg sadržaja.
 - **Atribucija je obavezna** u UI-ju gdje god se prikazuje Wikipedia tekst ili slika.
 - **Wikimedia API pozivi moraju slati opisan `User-Agent`** i poštovati rate limit.
 - **Pretraga** ide prvo nad lokalnom bazom (`unaccent` + `pg_trgm`, mora naći
@@ -98,9 +98,12 @@ destinacijama se **ne piše u kod**. Ide u bazu na jedan od dva načina:
   korištenja) — Mapbox služi za prikaz mape i Directions, ne kao izvor podataka.
 - **Udaljenosti** između mjesta u bazi računati PostGIS-om; Mapbox Directions
   samo za stvarne rute (itinerer).
-- **"Popularno ovog mjeseca"** izvodi se iz podataka, ne iz analitike: mjeseci
-  sezone destinacije (izvedeni iz tagova i Open-Meteo klimatskih prosjeka, uz
-  ručnu korekciju) plus ručna oznaka `IsFeatured`.
+- **Ručni podaci** (mjesta, smještaj) žive u JSON fajlovima u repou koje učitava
+  idempotentan seeder (`Source = manual`), ne u C# kodu. Ručni zapis povezan sa OSM
+  zapisom preko `ExternalId` nadjačava uvezeni, bez duplikata.
+- **Uvezene destinacije i preporuke**: tagovi se izvode iz tipa mjesta, a budžet,
+  tipično trajanje i sezona dobijaju podrazumijevane vrijednosti (konfiguracija)
+  uz ručnu korekciju. Destinacija bez dovoljno podataka ne učestvuje u preporukama.
 
 ## Eksterni provajderi (besplatni za MVP osim AI-ja — ne dodavati plaćene bez pitanja)
 
@@ -117,7 +120,7 @@ destinacijama se **ne piše u kod**. Ide u bazu na jedan od dva načina:
 ## Geografski obim MVP-a
 
 **Cijela BiH** je pretraživa kroz uvoz iz API-ja. **Ručno kuriran sadržaj**
-(istaknuta mjesta, ručne dopune, smještaj) samo za: Sarajevo, Mostar, Trebinje i
+(ručne dopune mjesta, smještaj) samo za: Sarajevo, Mostar, Trebinje i
 Hercegovina, Neum, Jahorina i Bjelašnica, Banja Luka, Travnik/Počitelj/Višegrad/Jajce.
 
 ## Frontend i dizajn
@@ -206,7 +209,7 @@ Izmjene itinerera AI samo **predlaže**; upis tek nakon odobrenja korisnika.
 
 Vidi `ROADMAP.md` za detaljnu podjelu po sprintovima. Projekat se smatra
 MVP-gotovim kad: registracija/login radi, sistem preporučuje BiH destinacije,
-stranica "Istraži" prikazuje popularna mjesta mjeseca i pretragu, stranica
+stranica "Istraži" omogućava pretragu i pregled destinacija, stranica
 destinacije ima mapu, mjesta i vremensku prognozu, itinerer dan-po-dan se može
 kreirati i uređivati, mapa prikazuje rute, budžet se prati u KM, AI asistent
 može predložiti/izmijeniti itinerer, aplikacija je dvojezična (BS/EN),
