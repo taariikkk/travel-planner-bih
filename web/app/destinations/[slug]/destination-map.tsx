@@ -50,14 +50,6 @@ export default function DestinationMap({ destination, token, language }: { desti
     return () => { disposed = true; window.clearTimeout(timeout); markerSet.clear(); map?.remove(); mapRef.current = null; };
   }, [destination, token, attempt]);
 
-  function focusPlace(id: string, longitude: number, latitude: number) {
-    const map = mapRef.current;
-    if (!map) return;
-    map.easeTo({ center: [longitude, latitude], zoom: 15, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500 });
-    markers.current.forEach(marker => { if (marker.getPopup()?.isOpen()) marker.togglePopup(); });
-    markers.current.get(id)?.togglePopup();
-  }
-
   return <div className={styles.mapGrid}>
     <div>
       <div className={styles.mapWrap}>
@@ -68,9 +60,5 @@ export default function DestinationMap({ destination, token, language }: { desti
       </div>
       <p className={styles.legend}><span className={styles.legendDestination} /> {labels.mapDestination} <span className={styles.legendPlace} /> {labels.nearby}</p>
     </div>
-    <aside className={styles.places} aria-label={labels.nearby}>
-      <h3>{labels.around} <span>{destination.places.length}</span></h3>
-      {destination.places.length ? <ul>{destination.places.map(place => <li key={place.id}><button disabled={status !== "ready" || !token} onClick={() => focusPlace(place.id, place.longitude, place.latitude)}><span>{place.name}<small>{(text[language].destinationExtras.categories as Record<string, string>)[place.category] ?? place.category}</small></span><span aria-hidden="true">↗</span></button></li>)}</ul> : <p>{labels.noPlaces}</p>}
-    </aside>
   </div>;
 }

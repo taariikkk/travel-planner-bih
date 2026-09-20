@@ -83,12 +83,12 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
       koja se povezuju u kasnijim sedmicama
 - [x] Ispravke sadržaja: neutralni naslov "O destinaciji: Bjelašnica", regija Bjelašnice
       (Sarajevski kanton, ne Centralna Bosna)
-- [ ] Redizajn rasporeda stranice destinacije po uzoru na referencu (u postojećem stilu,
+- [x] Redizajn rasporeda stranice destinacije po uzoru na referencu (u postojećem stilu,
       bez kartica sa sjenkama): hero blok sa slikom, nazivom i osnovnom statistikom
       (stanovnici, nadmorska visina, region, udaljenost od Sarajeva), srce za omiljeno,
       zatim blokovi "O destinaciji", "Vrijeme", "Brze činjenice" i "Top mjesta"
-- [ ] Prikaz broja stanovnika (kad postoji `Population`)
-- [ ] "Top mjesta" prikazuju sliku mjesta kad postoji
+- [x] Prikaz broja stanovnika (kad postoji `Population`)
+- [x] "Top mjesta" prikazuju sliku mjesta kad postoji
 
 ### Navigacija i layout
 Dva layouta u postojećem stilu (krem, zelena, serifni naslovi): javni sa gornjim
