@@ -1,0 +1,11 @@
+.page { --paper: #f5f2eb; --ink: #252925; --accent: #086b59; --muted: #62655d; --rule: #d9d8ce; min-height: 100svh; padding: clamp(58px, 9vw, 120px) clamp(24px, 8vw, 120px); background: var(--paper); color: var(--ink); }
+.intro { max-width: 760px; }
+.number { margin: 0 0 30px; color: var(--accent); font-size: 10px; font-weight: 600; letter-spacing: 1.5px; }
+.intro h1 { margin: 0; font: 400 clamp(46px, 6vw, 82px)/1.06 Georgia, "Times New Roman", serif; letter-spacing: -2.2px; }
+.intro h1 em { color: var(--accent); font-weight: 400; }
+.description { max-width: 520px; margin: 30px 0 34px; color: var(--muted); font-size: 16px; line-height: 1.85; }
+.action { display: inline-flex; min-height: 54px; align-items: center; justify-content: center; gap: 24px; padding: 16px 23px; border-radius: 4px; background: var(--accent); color: white; font-size: 14px; font-weight: 600; text-decoration: none; }
+.action:hover { background: #064d40; }
+.action:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.rule { display: flex; justify-content: space-between; margin-top: clamp(70px, 14vw, 180px); padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 10px; letter-spacing: 1.2px; }
+@media (max-width: 760px) { .page { min-height: calc(100svh - 72px); padding: 56px 6% 40px; } .intro h1 { font-size: clamp(44px, 13vw, 62px); letter-spacing: -1.6px; } .description { font-size: 15px; } }

@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, getErrorMessage, Recommendation, UserProfile } from "../lib/api";
 import { formatTag, formatTagLabel, text } from "../lib/i18n";
 import { formatRecommendationReason } from "../lib/recommendation-reason";
 import { useLanguage } from "./language-provider";
+import { useAuth } from "./auth-provider";
 import styles from "./recommendation-wizard.module.css";
 
 
@@ -21,66 +21,45 @@ function destinationSlug(name: string) {
 }
 
 export function RecommendationWizard() {
-  const router = useRouter();
   const language = useLanguage();
   const t = text[language].rec;
-  const tokenRef = useRef<string | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const { token, user, profileError, updateUser } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(() => user);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(() => user?.preferences ?? []);
   const [budgetTier, setBudgetTier] = useState("standard");
   const [travelDays, setTravelDays] = useState(3);
   const [season, setSeason] = useState("summer");
   const [results, setResults] = useState<Recommendation[]>([]);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const previousLanguage = useRef(language);
-
-  useEffect(() => {
-    const storedToken = sessionStorage.getItem("travelPlanner.accessToken");
-    if (!storedToken) {
-      router.replace("/login");
-      return;
-    }
-    tokenRef.current = storedToken;
-    apiFetch("/api/users/me", {}, storedToken)
-      .then(async (response) => {
-        if (!response.ok) throw new Error(t.expired);
-        const user = (await response.json()) as UserProfile;
-        setProfile(user);
-        setSelectedInterests(user.preferences);
-      })
-      .catch((exception: unknown) => setError(exception instanceof Error ? exception.message : t.profileUnavailable))
-      .finally(() => setIsLoading(false));
-  }, [router, t.expired, t.profileUnavailable]);
 
   useEffect(() => {
     if (previousLanguage.current === language) return;
     previousLanguage.current = language;
-    const token = tokenRef.current;
     if (!token || !profile || results.length === 0) return;
-    setError("");
-    setIsLoading(true);
     apiFetch("/api/destinations/recommend", { method: "POST", body: JSON.stringify({ budgetTier, travelDays, season, language }) }, token)
       .then(async (response) => {
         if (!response.ok) throw new Error(await getErrorMessage(response, t.unavailable));
         setResults((await response.json()) as Recommendation[]);
       })
-      .catch((exception: unknown) => setError(exception instanceof Error ? exception.message : text[language].auth.unexpectedError))
-      .finally(() => setIsLoading(false));
-  }, [budgetTier, language, profile, results.length, season, t.unavailable, travelDays]);
+      .catch((exception: unknown) => setError(exception instanceof Error ? exception.message : text[language].auth.unexpectedError));
+  }, [budgetTier, language, profile, results.length, season, t.unavailable, token, travelDays]);
 
   function toggleInterest(interest: string) {
     setSelectedInterests((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest]);
   }
 
   async function findRecommendations() {
-    const token = tokenRef.current;
     if (!token || !profile) return;
     setError("");
     setIsLoading(true);
     try {
       const updateProfile = await apiFetch("/api/users/me", { method: "PUT", body: JSON.stringify({ displayName: profile.displayName, preferences: selectedInterests }) }, token);
       if (!updateProfile.ok) throw new Error(await getErrorMessage(updateProfile, t.interestsSaveFailed));
+      const updatedUser = (await updateProfile.json()) as UserProfile;
+      setProfile(updatedUser);
+      updateUser(updatedUser);
       const response = await apiFetch("/api/destinations/recommend", { method: "POST", body: JSON.stringify({ budgetTier, travelDays, season, language }) }, token);
       if (!response.ok) throw new Error(await getErrorMessage(response, t.unavailable));
       setResults((await response.json()) as Recommendation[]);
@@ -91,21 +70,11 @@ export function RecommendationWizard() {
     }
   }
 
-  function logout() {
-    sessionStorage.removeItem("travelPlanner.accessToken");
-    router.replace("/");
-  }
-
+  if (profileError) return <main className={styles.loading} role="alert">{t.profileUnavailable}</main>;
   if (isLoading && !profile) return <main className={styles.loading} role="status">{t.loadingProfile}</main>;
 
   return (
     <main className={styles.page}>
-      <nav className={styles.nav} aria-label="Glavna navigacija">
-        <div className={styles.navInner}>
-          <Link className={styles.brand} href="/">Travel Planner <strong>BiH</strong></Link>
-          <div className={styles.account}><span>{profile?.displayName}</span><button onClick={logout}>{t.logout}</button></div>
-        </div>
-      </nav>
       <section className={styles.heading}>
         <div className={styles.headingBackdrop} aria-hidden="true" />
         <div className={styles.headingContent}>

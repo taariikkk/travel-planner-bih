@@ -23,9 +23,6 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
   const publicToken = token?.startsWith("pk.") ? token : null;
   const hasPhoto = destination.slug === "mostar";
   return <div className={styles.page}>
-    <header className={styles.header}>
-      <Link href="/" className={styles.brand}>Travel Planner <strong>BiH</strong></Link>
-    </header>
     <main className={styles.main}>
       <nav className={styles.breadcrumb} aria-label={labels.breadcrumb}><Link href="/">{labels.home}</Link><span aria-hidden="true">/</span><Link href="/recommendations">{labels.recommendations}</Link><span aria-hidden="true">/</span><span>{destination.name}</span></nav>
       <section className={`${styles.hero} ${!hasPhoto ? styles.textHero : ""}`} aria-labelledby="destination-title">

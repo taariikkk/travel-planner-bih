@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { apiFetch, AuthResponse, getErrorMessage } from "../lib/api";
 import { text } from "../lib/i18n";
+import { useAuth } from "./auth-provider";
 import { useLanguage } from "./language-provider";
 
 type AuthFormProps = { mode: "login" | "register" };
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
+  const { establishSession } = useAuth();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +29,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       const response = await apiFetch(`/api/auth/${mode}`, { method: "POST", body: JSON.stringify(isRegister ? { email, password, displayName } : { email, password }) });
       if (!response.ok) throw new Error(await getErrorMessage(response, t.loginFailed));
       const result = (await response.json()) as AuthResponse;
-      sessionStorage.setItem("travelPlanner.accessToken", result.accessToken);
+      establishSession(result.accessToken, result.user);
       router.replace("/recommendations");
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : t.unexpectedError);
@@ -39,7 +41,6 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <main className="grid min-h-screen place-items-center bg-[#f3f6f6] px-5 py-10 text-[#10231e]">
       <section className="w-full max-w-md rounded-3xl border border-[#dce5e2] bg-white p-8 shadow-xl shadow-[#10231e]/5 sm:p-10">
-        <Link className="flex items-center gap-2 text-base font-bold" href="/"><span className="grid h-8 w-8 place-items-center rounded-full bg-[#075b3a] text-white">⌁</span>Travel Planner BiH</Link>
         <h1 className="mt-10 text-3xl font-bold tracking-tight">{isRegister ? t.registerTitle : t.loginTitle}</h1>
         <p className="mt-3 leading-6 text-[#607080]">{isRegister ? t.registerDescription : t.loginDescription}</p>
         <form className="mt-8 space-y-5" onSubmit={submit}>

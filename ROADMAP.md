@@ -94,15 +94,15 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
 Dva layouta u postojećem stilu (krem, zelena, serifni naslovi): javni sa gornjim
 navbarom i aplikacijski sa lijevim sidebarom nakon prijave.
 
-- [ ] Layout za javne stranice (Next.js) sa gornjim navbarom: Kako funkcioniše,
+- [x] Layout za javne stranice (Next.js) sa gornjim navbarom: Kako funkcioniše,
       Istraži, Prijava, Kreiraj račun, BS/EN
-- [ ] Aplikacijski layout za prijavljene korisnike sa lijevim sidebarom: Dashboard,
+- [x] Aplikacijski layout za prijavljene korisnike sa lijevim sidebarom: Dashboard,
       Destinacije (Istraži), Preporuke, Moja putovanja, Budžet, Postavke; u dnu blok
       sa korisnikom (ime, email, odjava) i BS/EN prekidač
-- [ ] Aktivno stanje linka; na mobilnom se sidebar pretvara u hamburger/drawer
-- [ ] Smislena prazna stanja za stavke čiji moduli još ne postoje (Dashboard,
+- [x] Aktivno stanje linka; na mobilnom se sidebar pretvara u hamburger/drawer
+- [x] Smislena prazna stanja za stavke čiji moduli još ne postoje (Dashboard,
       "Moja putovanja", "Budžet")
-- [ ] Stranica Postavke: profil i preferencije (koristi postojeći `GET/PUT /api/users/me`)
+- [x] Stranica Postavke: profil i preferencije (koristi postojeći `GET/PUT /api/users/me`)
 
 ### Model podataka — proširenje (nova migracija, ne mijenjati postojeće)
 Ostale tabele dodaju se tek kad zatrebaju: `ShareLink` u Sedmici 5-6,

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { Suspense } from "react";
+import { AppShell } from "./components/app-shell";
+import { AuthProvider } from "./components/auth-provider";
 import { LanguageProvider } from "./components/language-provider";
 import { getLanguage, LANGUAGE_COOKIE } from "./lib/i18n";
 import "./globals.css";
@@ -16,7 +19,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang={language}
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col"><LanguageProvider language={language}>{children}</LanguageProvider></body>
+      <body className="min-h-full">
+        <LanguageProvider language={language}>
+          <AuthProvider>
+            <Suspense fallback={<div className="min-h-screen bg-[#f5f2eb]" />}><AppShell>{children}</AppShell></Suspense>
+          </AuthProvider>
+        </LanguageProvider>
+      </body>
     </html>
   );
 }

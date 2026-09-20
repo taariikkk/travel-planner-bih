@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { LanguageSwitcher } from "./components/language-switcher";
 import { getLanguage, LANGUAGE_COOKIE, text } from "./lib/i18n";
 import styles from "./home.module.css";
 
@@ -14,20 +13,7 @@ export default async function Home() {
   const t = text[language].home;
   return (
     <div className={styles.home}>
-      <a href="#sadrzaj" className={styles.skip}>{t.skip}</a>
-      <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label={`Travel Planner BiH — ${language === "en" ? "home" : "početna"}`}>
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M5 29 16 11l7 11 4-6 8 13M12 29c5-7 11 7 17 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          <span>Travel Planner <strong>BiH</strong></span>
-        </Link>
-        <nav className={styles.nav} aria-label={t.nav}>
-          <a className={styles.aboutLink} href="#kako-funkcionise">{t.how}</a>
-          <Link href="/login">{t.login}</Link>
-          <Link href="/register" className={styles.navCta}>{t.register} <Arrow /></Link>
-          <LanguageSwitcher className={styles.languageSwitcher} />
-        </nav>
-      </header>
-      <main id="sadrzaj">
+      <main>
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.heroCopy}>
             <h1 id="hero-title">{t.hero[0]}<br />{t.hero[1]}<br /><em>{t.hero[2]}</em></h1>
