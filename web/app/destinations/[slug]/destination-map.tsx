@@ -70,7 +70,7 @@ export default function DestinationMap({ destination, token, language }: { desti
     </div>
     <aside className={styles.places} aria-label={labels.nearby}>
       <h3>{labels.around} <span>{destination.places.length}</span></h3>
-      {destination.places.length ? <ul>{destination.places.map(place => <li key={place.id}><button disabled={status !== "ready" || !token} onClick={() => focusPlace(place.id, place.longitude, place.latitude)}><span>{place.name}<small>{({ restaurant: language === "en" ? "Restaurant" : "Restoran", attraction: language === "en" ? "Attraction" : "Atrakcija", restoran: language === "en" ? "Restaurant" : "Restoran", atrakcija: language === "en" ? "Attraction" : "Atrakcija" } as Record<string, string>)[place.category] ?? place.category}</small></span><span aria-hidden="true">↗</span></button></li>)}</ul> : <p>{labels.noPlaces}</p>}
+      {destination.places.length ? <ul>{destination.places.map(place => <li key={place.id}><button disabled={status !== "ready" || !token} onClick={() => focusPlace(place.id, place.longitude, place.latitude)}><span>{place.name}<small>{(text[language].destinationExtras.categories as Record<string, string>)[place.category] ?? place.category}</small></span><span aria-hidden="true">↗</span></button></li>)}</ul> : <p>{labels.noPlaces}</p>}
     </aside>
   </div>;
 }

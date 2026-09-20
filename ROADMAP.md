@@ -76,12 +76,12 @@ podesiti preferencije; baza ima 10-15 destinacija; migracije rade bez grešaka.
 - [x] Prikaz: pregled, tipično trajanje boravka, tagovi
 - [x] Osnovna integracija Mapbox mape (glavni marker destinacije, markeri
       obližnjih `Place` zapisa kad postoje)
-- [ ] Brze činjenice: nadmorska visina, udaljenost od Sarajeva (PostGIS), najbolja
-      sezona, prosječna temperatura
-- [ ] Lista "top mjesta" u blizini (iz `Place`)
-- [ ] Prazna mjesta (skeleton) za prognozu, smještaj i dugme "Isplaniraj mi 2 dana"
+- [x] Brze činjenice: udaljenost od Sarajeva (PostGIS), najbolja sezona;
+      nadmorska visina i prosječna temperatura prikazuju se samo kad postoje podaci
+- [x] Lista "top mjesta" u blizini (iz `Place`, najbližih 6)
+- [x] Prazna mjesta (skeleton) za prognozu, smještaj i dugme "Isplaniraj mi 2 dana"
       koja se povezuju u kasnijim sedmicama
-- [ ] Ispravke sadržaja: naslov "Upoznaj Bjelašnicu" (gramatika), regija Bjelašnice
+- [x] Ispravke sadržaja: neutralni naslov "O destinaciji: Bjelašnica", regija Bjelašnice
       (Sarajevski kanton, ne Centralna Bosna)
 
 ### Navigacija i layout

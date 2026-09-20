@@ -228,6 +228,21 @@ Grubi pregled po sedmicama:
 - Aplikacija radi produkcijski (deployed), uz minimalne troškove
 - README i demo materijal jasno pokazuju BiH fokus kao svjesnu odluku
 
+## Napomene za stranicu destinacije
+
+Pretpostavka: „O destinaciji: {ime}” / „About: {name}” koristi nominativ i ne
+zahtijeva ručnu deklinaciju. Obližnja mjesta su zapisi vezani za destinaciju,
+sortirani PostGIS udaljenošću od postojećeg centra mape, najviše šest.
+Udaljenost od Sarajeva računa se preko geography/WGS84 u kilometrima, zračnom
+linijom. Visina i prosječna temperatura su nullable polja odgovora i ostaju
+skriveni dok ne postoji izvor podataka; prognoza i smještaj su prazna stanja.
+
+Migracija `CorrectBjelasnicaRegion` ispravlja regiju postojećeg seed zapisa.
+PostGIS testovi koriste `TEST_POSTGIS_CONNECTION` (baza sa migracijama i seed
+destinacijama). Test liste koristi privremenu tabelu i rollback, bez izmjene
+stvarnih mjesta. Bez te varijable integracijski testovi se preskaču; unit test
+SQL izraza i jedinica izvršava se uvijek.
+
 ## Monetizacija (buduća faza)
 
 - Freemium model prilagođen BiH kupovnoj moći (5-10 KM/mjesečno Premium)

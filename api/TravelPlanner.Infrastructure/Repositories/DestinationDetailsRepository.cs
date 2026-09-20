@@ -28,18 +28,31 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
     {
         if (!Catalog.TryGetValue(slug, out var entry)) return null;
         var destination = await context.Destinations.AsNoTracking()
-            .Include(item => item.Translations).Include(item => item.Places).AsSplitQuery()
+            .Include(item => item.Translations)
             .SingleOrDefaultAsync(item => item.Name == entry.Name, cancellationToken);
         if (destination is null) return null;
         var translation = destination.Translations.FirstOrDefault(item => item.LanguageCode == language);
-        var places = destination.Places.Where(place => place.Location is { IsEmpty: false }
-                && double.IsFinite(place.Location.X) && double.IsFinite(place.Location.Y)
-                && place.Location.X is >= -180 and <= 180 && place.Location.Y is >= -90 and <= 90)
-            .OrderBy(place => place.Name)
-            .Select(place => new PlaceResponse(place.Id, place.Name, place.Category, place.Location.Y, place.Location.X)).ToArray();
+        // Assumption: nearby means places belonging to this destination, ordered from its existing map center.
+        // Cast geometry to geography: ST_Distance then returns geodesic meters, not degrees.
+        var nearest = await context.Places.FromSqlInterpolated($"""
+            SELECT * FROM "Place"
+            WHERE "DestinationId" = {destination.Id}
+              AND NOT ST_IsEmpty("Location")
+              AND ST_X("Location") BETWEEN -180 AND 180
+              AND ST_Y("Location") BETWEEN -90 AND 90
+            ORDER BY ST_Distance("Location"::geography,
+                ST_SetSRID(ST_MakePoint({entry.Lng}, {entry.Lat}), 4326)::geography), "Name", "Id"
+            LIMIT 6
+            """).AsNoTracking().ToArrayAsync(cancellationToken);
+        var places = nearest.Select(place => new PlaceResponse(
+            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X)).ToArray();
+        var sarajevo = Catalog["sarajevo"];
+        var distance = await context.Database.SqlQuery<double>(
+            DestinationDistance.QueryKm(entry.Lat, entry.Lng, sarajevo.Lat, sarajevo.Lng))
+            .SingleAsync(cancellationToken);
         return new(destination.Id, slug.ToLowerInvariant(), destination.Name, destination.Region,
             translation?.Description ?? destination.Description, translation?.BestTimeToVisit ?? destination.BestTimeToVisit,
             destination.SuggestedStayMinDays, destination.SuggestedStayMaxDays, destination.Tags,
-            entry.Lat, entry.Lng, places);
+            entry.Lat, entry.Lng, places, slug.Equals("sarajevo", StringComparison.OrdinalIgnoreCase) ? null : distance);
     }
 }

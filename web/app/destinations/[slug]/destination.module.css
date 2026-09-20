@@ -18,6 +18,9 @@
 .facts dt { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
 .facts dd { margin: 0; font-size: 18px; line-height: 1.5; }
 .action { display: inline-flex; align-items: center; gap: 34px; background: var(--accent); color: white; padding: 17px 24px; border-radius: 4px; min-height: 54px; font-size: 14px; }
+.action:disabled { opacity: .5; cursor: not-allowed; }
+.planning { padding: 0 0 48px; }
+.planning p { color: var(--muted); font-size: 13px; margin-top: 14px; }
 .photo { margin: 0; min-width: 0; }
 .photoFrame { position: relative; height: clamp(390px, 42vw, 590px); overflow: hidden; border-radius: 50% 50% 18px 18px / 24% 24% 18px 18px; }
 .image { object-fit: cover; object-position: 43% 55%; }

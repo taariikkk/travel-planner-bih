@@ -12,6 +12,8 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const language = getLanguage((await cookies()).get(LANGUAGE_COOKIE)?.value);
   const labels = text[language].destination;
+  const extra = text[language].destinationExtras;
+  const number = new Intl.NumberFormat(language, { maximumFractionDigits: 1 });
   const response = await apiFetch(`/api/destinations/${encodeURIComponent(slug)}?language=${language}`, { cache: "no-store" });
   if (response.status === 404) notFound();
   if (!response.ok) throw new Error("Destination request failed");
@@ -31,9 +33,12 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
           <p className={styles.region}>{destination.region} · {labels.country}</p>
           <h1 id="destination-title">{destination.name}</h1>
           <ul className={styles.tags} aria-label={labels.interests}>{destination.tags.map(tag => <li key={tag}>{formatTag(tag, language)}</li>)}</ul>
-          <dl className={styles.facts}>
+          <dl className={styles.facts} aria-label={extra.facts}>
             <div><dt>{labels.stay}</dt><dd>{destination.suggestedStayMinDays}–{destination.suggestedStayMaxDays} {labels.days}</dd></div>
             <div><dt>{labels.bestTime}</dt><dd>{destination.bestTimeToVisit}</dd></div>
+            {destination.slug !== "sarajevo" && destination.distanceFromSarajevoKm != null && <div><dt>{extra.distance}</dt><dd>{number.format(destination.distanceFromSarajevoKm)} km</dd></div>}
+            {destination.elevationMeters != null && <div><dt>{extra.elevation}</dt><dd>{number.format(destination.elevationMeters)} m</dd></div>}
+            {destination.averageTemperatureC != null && <div><dt>{extra.temperature}</dt><dd>{number.format(destination.averageTemperatureC)} °C</dd></div>}
           </dl>
           <a href="#mapa" className={styles.action}>{labels.mapAction} <span aria-hidden="true">↓</span></a>
         </div>
@@ -42,11 +47,22 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
           <figcaption>{labels.photoCaption}</figcaption>
         </figure>}
       </section>
-      <section className={styles.overview} aria-labelledby="overview-title"><h2 id="overview-title">{labels.overview} {destination.name}</h2><p>{destination.description}</p></section>
+      {/* Assumption: a neutral label keeps every destination name in nominative, without a declension catalog. */}
+      <section className={styles.overview} aria-labelledby="overview-title"><h2 id="overview-title">{extra.overview} {destination.name}</h2><p>{destination.description}</p></section>
       <section id="mapa" className={styles.mapSection} aria-labelledby="map-title">
         <div className={styles.mapHeading}><h2 id="map-title">{labels.mapTitle}</h2><p>{labels.mapIntro}</p></div>
         <DestinationMap destination={destination} token={publicToken} language={language} />
       </section>
+      <section className={styles.overview} aria-labelledby="weather-title">
+        <h2 id="weather-title">{extra.weather}</h2><p>{extra.weatherEmpty}</p>
+      </section>
+      <section className={styles.overview} aria-labelledby="accommodation-title">
+        <h2 id="accommodation-title">{extra.accommodation}</h2><p>{extra.accommodationEmpty}</p>
+      </section>
+      <div className={styles.planning}>
+        <button className={styles.action} disabled aria-describedby="planning-hint">{extra.plan}</button>
+        <p id="planning-hint">{extra.planHint}</p>
+      </div>
     </main>
     <footer className={styles.footer}><span>Travel Planner BiH</span><Link href="/recommendations">{labels.continue}</Link></footer>
   </div>;

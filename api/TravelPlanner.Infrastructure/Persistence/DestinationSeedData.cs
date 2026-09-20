@@ -52,7 +52,7 @@ internal static class DestinationSeedData
         {
             Id = Guid.Parse(id),
             Name = name,
-            Region = region,
+            Region = name == "Bjelašnica" ? "Sarajevski kanton" : region,
             Description = description,
             BestTimeToVisit = bestTimeToVisit,
             BudgetTier = metadata.BudgetTier,
