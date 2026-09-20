@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using TravelPlanner.Application.Interfaces;
+using TravelPlanner.Application.Services;
 using TravelPlanner.Api.Infrastructure.Persistence;
 using TravelPlanner.Infrastructure.Repositories;
 using TravelPlanner.Infrastructure.Security;
@@ -22,18 +23,42 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString, npgsqlOptions => npgsqlOptions.UseNetTopologySuite()));
 
+        var wikimediaOptions = configuration.GetSection(WikimediaOptions.SectionName).Get<WikimediaOptions>()
+            ?? throw new InvalidOperationException("Wikimedia configuration was not found.");
+        if (string.IsNullOrWhiteSpace(wikimediaOptions.UserAgent) || wikimediaOptions.TimeoutSeconds <= 0 || wikimediaOptions.RequestsPerSecond <= 0)
+            throw new InvalidOperationException("Wikimedia configuration is invalid.");
         var wikidataOptions = configuration.GetSection(WikidataOptions.SectionName).Get<WikidataOptions>()
             ?? throw new InvalidOperationException("Wikidata configuration was not found.");
-        if (string.IsNullOrWhiteSpace(wikidataOptions.UserAgent) || wikidataOptions.TimeoutSeconds <= 0
-            || !Uri.TryCreate(wikidataOptions.BaseUrl, UriKind.Absolute, out var wikidataBaseUri))
+        if (!Uri.TryCreate(wikidataOptions.BaseUrl, UriKind.Absolute, out var wikidataBaseUri))
             throw new InvalidOperationException("Wikidata configuration is invalid.");
+        var wikipediaOptions = configuration.GetSection(WikipediaOptions.SectionName).Get<WikipediaOptions>()
+            ?? throw new InvalidOperationException("Wikipedia configuration was not found.");
+        var commonsOptions = configuration.GetSection(WikimediaCommonsOptions.SectionName).Get<WikimediaCommonsOptions>()
+            ?? throw new InvalidOperationException("Wikimedia Commons configuration was not found.");
+        var importOptions = configuration.GetSection(DestinationImportOptions.SectionName).Get<DestinationImportOptions>()
+            ?? throw new InvalidOperationException("Destination import configuration was not found.");
+        if (importOptions.TtlHours <= 0 || importOptions.DefaultSuggestedStayMinDays <= 0
+            || importOptions.DefaultSuggestedStayMaxDays < importOptions.DefaultSuggestedStayMinDays)
+            throw new InvalidOperationException("Destination import configuration is invalid.");
+
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(importOptions);
+        services.Configure<WikimediaOptions>(configuration.GetSection(WikimediaOptions.SectionName));
         services.Configure<WikidataOptions>(configuration.GetSection(WikidataOptions.SectionName));
+        services.Configure<WikipediaOptions>(configuration.GetSection(WikipediaOptions.SectionName));
+        services.Configure<WikimediaCommonsOptions>(configuration.GetSection(WikimediaCommonsOptions.SectionName));
+        services.AddSingleton<IWikimediaRequestGate, WikimediaRequestGate>();
+        services.AddTransient<WikimediaRateLimitHandler>();
         services.AddHttpClient(WikidataProvider.ClientName, client =>
         {
             client.BaseAddress = wikidataBaseUri;
-            client.Timeout = TimeSpan.FromSeconds(wikidataOptions.TimeoutSeconds);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(wikidataOptions.UserAgent);
-        });
+            ConfigureWikimediaClient(client, wikimediaOptions);
+        }).AddHttpMessageHandler<WikimediaRateLimitHandler>();
+        services.AddHttpClient(WikipediaSummaryProvider.ClientName, client => ConfigureWikimediaClient(client, wikimediaOptions))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false })
+            .AddHttpMessageHandler<WikimediaRateLimitHandler>();
+        services.AddHttpClient(WikimediaCommonsImageProvider.ClientName, client => ConfigureWikimediaClient(client, wikimediaOptions))
+            .AddHttpMessageHandler<WikimediaRateLimitHandler>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? throw new InvalidOperationException("JWT configuration was not found.");
@@ -46,6 +71,9 @@ public static class DependencyInjection
         services.AddScoped<IDestinationDetailsRepository, DestinationDetailsRepository>();
         services.AddScoped<ISavedPlaceRepository, SavedPlaceRepository>();
         services.AddScoped<IDestinationDataProvider, WikidataProvider>();
+        services.AddScoped<IWikipediaSummaryProvider, WikipediaSummaryProvider>();
+        services.AddScoped<IImageProvider, WikimediaCommonsImageProvider>();
+        services.AddScoped<IDestinationImportRepository, DestinationImportRepository>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
@@ -59,5 +87,11 @@ public static class DependencyInjection
             });
 
         return services;
+    }
+
+    private static void ConfigureWikimediaClient(HttpClient client, WikimediaOptions options)
+    {
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent);
     }
 }

@@ -1,0 +1,6 @@
+{
+  "type": "standard",
+  "redirect": true,
+  "extract": "Dovoljno dugačak tekst koji ipak ne smije proći zato što fixture predstavlja preusmjeravanje na drugu Wikipedia stranicu.",
+  "content_urls": { "desktop": { "page": "https://en.wikipedia.org/wiki/Test" } }
+}

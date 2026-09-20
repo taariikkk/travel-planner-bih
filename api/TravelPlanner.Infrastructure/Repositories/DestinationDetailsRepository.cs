@@ -51,7 +51,8 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
             DestinationDistance.QueryKm(entry.Lat, entry.Lng, sarajevo.Lat, sarajevo.Lng))
             .SingleAsync(cancellationToken);
         return new(destination.Id, slug.ToLowerInvariant(), destination.Name, destination.Region,
-            translation?.Description ?? destination.Description, translation?.BestTimeToVisit ?? destination.BestTimeToVisit,
+            translation?.Description ?? (language == "en" ? destination.DescriptionEn : null) ?? destination.Description,
+            translation?.BestTimeToVisit ?? destination.BestTimeToVisit,
             destination.SuggestedStayMinDays, destination.SuggestedStayMaxDays, destination.Tags,
             entry.Lat, entry.Lng, places, slug.Equals("sarajevo", StringComparison.OrdinalIgnoreCase) ? null : distance);
     }

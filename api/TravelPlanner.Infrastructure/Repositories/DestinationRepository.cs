@@ -10,6 +10,7 @@ public sealed class DestinationRepository(ApplicationDbContext context) : IDesti
     public async Task<IReadOnlyList<Destination>> GetAllWithTranslationsAsync(CancellationToken cancellationToken) =>
         await context.Destinations
             .AsNoTracking()
+            .Where(destination => destination.IsRecommendationEligible)
             .Include(destination => destination.Translations)
             .ToListAsync(cancellationToken);
 }

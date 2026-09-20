@@ -63,7 +63,10 @@ public sealed class ApplicationDbContextModelTests
         Assert.True(destination.FindProperty(nameof(Destination.ExternalId))!.IsNullable);
         Assert.True(destination.FindProperty(nameof(Destination.Population))!.IsNullable);
         Assert.Equal(16, destination.FindProperty(nameof(Destination.BudgetTier))!.GetMaxLength());
+        Assert.Equal(180, destination.FindProperty(nameof(Destination.Slug))!.GetMaxLength());
+        Assert.False(destination.FindProperty(nameof(Destination.Slug))!.IsNullable);
         Assert.Contains(destination.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(Destination.ExternalId)]));
+        Assert.Contains(destination.GetIndexes(), index => index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(Destination.Slug)]));
         Assert.Single(destination.GetIndexes(), index => !index.IsUnique && index.Properties.Select(property => property.Name).SequenceEqual([nameof(Destination.Name)]));
         var designTimeDestination = context.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Destination))!;
         var seededDestinations = designTimeDestination.GetSeedData();

@@ -1,0 +1,5 @@
+{
+  "type": "standard",
+  "extract": "Kratak opis.",
+  "content_urls": { "desktop": { "page": "https://en.wikipedia.org/wiki/Test" } }
+}

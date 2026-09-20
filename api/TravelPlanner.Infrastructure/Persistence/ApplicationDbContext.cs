@@ -39,6 +39,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         {
             entity.ToTable("Destination");
             entity.Property(destination => destination.Name).IsRequired();
+            entity.Property(destination => destination.Slug).IsRequired().HasMaxLength(180);
             entity.Property(destination => destination.Type).IsRequired().HasMaxLength(16);
             entity.Property(destination => destination.Source).IsRequired().HasMaxLength(16);
             entity.Property(destination => destination.ExternalId).HasMaxLength(32);
@@ -49,10 +50,12 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(destination => destination.BudgetTier).IsRequired().HasMaxLength(16);
             entity.Property(destination => destination.SuggestedStayMinDays).IsRequired();
             entity.Property(destination => destination.SuggestedStayMaxDays).IsRequired();
+            entity.Property(destination => destination.IsRecommendationEligible).HasDefaultValue(true);
             ConfigureStringList(entity.Property(destination => destination.BestSeasons));
             ConfigureStringList(entity.Property(destination => destination.Tags));
             ConfigureStringList(entity.Property(destination => destination.ManualOverrideFields));
             entity.HasIndex(destination => destination.ExternalId).IsUnique().HasFilter("\"ExternalId\" IS NOT NULL");
+            entity.HasIndex(destination => destination.Slug).IsUnique();
             entity.HasIndex(destination => destination.Name).HasMethod("gin").HasOperators("gin_trgm_ops");
             entity.HasData(DestinationSeedData.Destinations);
         });

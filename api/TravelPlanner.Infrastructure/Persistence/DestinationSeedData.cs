@@ -52,6 +52,14 @@ internal static class DestinationSeedData
         {
             Id = Guid.Parse(id),
             Name = name,
+            Slug = name switch
+            {
+                "Bjelašnica" => "bjelasnica",
+                "Banja Luka" => "banja-luka",
+                "Počitelj" => "pocitelj",
+                "Višegrad" => "visegrad",
+                _ => name.ToLowerInvariant()
+            },
             Type = GetType(name),
             Source = "manual",
             Region = name == "Bjelašnica" ? "Sarajevski kanton" : region,

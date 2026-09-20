@@ -124,6 +124,20 @@ public sealed class RecommendationServiceTests
         Assert.Equal("English description", result[0].Description);
     }
 
+    [Fact]
+    public async Task Recommend_excludes_destinations_that_failed_import_quality_control()
+    {
+        var user = new User { Id = Guid.NewGuid(), Preferences = ["historija"] };
+        var eligible = Destination("Dovoljna", ["historija"], "standard", 1, 3, ["summer"]);
+        var insufficient = Destination("Nedovoljna", ["historija"], "standard", 1, 3, ["summer"]);
+        insufficient.IsRecommendationEligible = false;
+        var service = CreateService(user, [insufficient, eligible]);
+
+        var result = await service.RecommendAsync(user.Id, new("standard", 2, "summer", "bs"), default);
+
+        Assert.Equal("Dovoljna", Assert.Single(result!).Name);
+    }
+
     [Theory]
     [InlineData("luxury", 3, "summer", "bs")]
     [InlineData("standard", 0, "summer", "bs")]

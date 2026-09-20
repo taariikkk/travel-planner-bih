@@ -23,6 +23,7 @@ public sealed class RecommendationService(IUserRepository users, IDestinationRep
             .Select(preference => preference.Trim().ToLowerInvariant())
             .ToHashSet();
         var scored = (await destinations.GetAllWithTranslationsAsync(cancellationToken))
+            .Where(destination => destination.IsRecommendationEligible)
             .Select(destination => Score(destination, preferences, request))
             .OrderByDescending(item => item.Score)
             // A deterministic secondary order keeps equally scored results stable across requests.
@@ -55,7 +56,9 @@ public sealed class RecommendationService(IUserRepository users, IDestinationRep
     private static DestinationRecommendationResponse ToResponse(ScoredDestination item, string language)
     {
         var translation = item.Destination.Translations.SingleOrDefault(value => value.LanguageCode == language);
-        var description = translation?.Description ?? item.Destination.Description;
+        var description = translation?.Description
+            ?? (language == "en" ? item.Destination.DescriptionEn : null)
+            ?? item.Destination.Description;
         var bestTime = translation?.BestTimeToVisit ?? item.Destination.BestTimeToVisit;
         return new(
             item.Destination.Id,

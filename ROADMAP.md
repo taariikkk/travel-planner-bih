@@ -123,18 +123,18 @@ zahtjev sa TTL kešom, bez Hangfirea.
 
 - [x] `IDestinationDataProvider` interfejs + `WikidataProvider` (pretraga, koordinate,
       tip, nadmorska visina, stanovnici)
-- [ ] `WikipediaSummaryProvider` (opis na bosanskom, fallback engleski; čuva izvor i URL)
-- [ ] `IImageProvider` + implementacija (Wikimedia Commons ili Unsplash) sa atribucijom
-- [ ] Servis za uvoz: prvi pristup mjestu → povuci, spremi, zabilježi `ImportedAt`;
+- [x] `WikipediaSummaryProvider` (opis na bosanskom, fallback engleski; čuva izvor i URL)
+- [x] `IImageProvider` + implementacija (Wikimedia Commons ili Unsplash) sa atribucijom
+- [x] Servis za uvoz: prvi pristup mjestu → povuci, spremi, zabilježi `ImportedAt`;
       osvježi kad TTL istekne
-- [ ] Pravilo prioriteta: ručna vrijednost > uvezena; ponovni uvoz nikad ne prepisuje ručna polja
-- [ ] Uvezene destinacije i preporuke: tagovi se izvode iz tipa mjesta, a budžet,
+- [x] Pravilo prioriteta: ručna vrijednost > uvezena; ponovni uvoz nikad ne prepisuje ručna polja
+- [x] Uvezene destinacije i preporuke: tagovi se izvode iz tipa mjesta, a budžet,
       tipično trajanje i sezona dobijaju podrazumijevane vrijednosti (konfiguracija,
       ne hardkodirano) uz ručnu korekciju; destinacija bez dovoljno podataka ne
       učestvuje u preporukama wizarda
-- [ ] Opisan `User-Agent` i poštovanje rate limita za Wikimedia pozive
-- [ ] Kontrola kvaliteta: zapis bez opisa ili sa preslabim opisom ne ulazi u preporuke;
-      UI prikazuje smisleno prazno stanje umjesto lošeg sadržaja
+- [x] Opisan `User-Agent` i poštovanje rate limita za Wikimedia pozive
+- [x] Kontrola kvaliteta: zapis bez opisa ili sa preslabim opisom ne ulazi u preporuke
+- [ ] UI prikazuje smisleno prazno stanje umjesto lošeg sadržaja
 - [ ] Prikaz slike i atribucije (Wikipedia tekst, slike) i nadmorske visine iz Wikidata
       na stranici destinacije
 - [ ] Opciono: komanda za pred-uvoz liste destinacija

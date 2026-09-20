@@ -1,0 +1,5 @@
+{
+  "type": "standard",
+  "extract": "Ovo je dovoljno dug fixture sažetak o destinaciji u Bosni i Hercegovini. Sadrži dovoljno znakova za prolazak konfigurisanog praga kvaliteta.",
+  "content_urls": { "desktop": { "page": "https://bs.wikipedia.org/wiki/Test" } }
+}

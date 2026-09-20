@@ -67,6 +67,33 @@ public sealed class DestinationEndpointsTests
     }
 
     [Fact]
+    public async Task Import_is_public_and_validates_qid()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+
+        var valid = await client.PostAsJsonAsync("/api/destinations/import", new { qid = "Q123" });
+        var invalid = await client.PostAsJsonAsync("/api/destinations/import", new { qid = "Sarajevo" });
+
+        Assert.Equal(HttpStatusCode.OK, valid.StatusCode);
+        Assert.Equal("test-grad", (await valid.Content.ReadFromJsonAsync<DestinationImportResponse>())!.Slug);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
+    public async Task Import_is_rate_limited_per_client_ip()
+    {
+        using var factory = new ApiFactory(importPermitLimit: 1);
+        using var client = factory.CreateClient();
+
+        var first = await client.PostAsJsonAsync("/api/destinations/import", new { qid = "Q123" });
+        var second = await client.PostAsJsonAsync("/api/destinations/import", new { qid = "Q124" });
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, second.StatusCode);
+    }
+
+    [Fact]
     public async Task Recommend_validates_request_and_returns_at_most_five_localized_results()
     {
         using var factory = new ApiFactory();
@@ -97,7 +124,7 @@ public sealed class DestinationEndpointsTests
         return body.RootElement.GetProperty("accessToken").GetString()!;
     }
 
-    private sealed class ApiFactory : WebApplicationFactory<Program>
+    private sealed class ApiFactory(int importPermitLimit = 5) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -107,7 +134,9 @@ public sealed class DestinationEndpointsTests
                 ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Database=travelplanner_test;Username=test;Password=test",
                 ["Jwt:Key"] = "test-signing-key-that-is-at-least-thirty-two-characters-long",
                 ["Jwt:Issuer"] = "TravelPlanner.Api.Tests",
-                ["Jwt:Audience"] = "TravelPlanner.Web.Tests"
+                ["Jwt:Audience"] = "TravelPlanner.Web.Tests",
+                ["RateLimiting:DestinationImportPermitLimit"] = importPermitLimit.ToString(),
+                ["RateLimiting:DestinationImportWindowSeconds"] = "60"
             }));
             builder.ConfigureTestServices(services =>
             {
@@ -118,8 +147,16 @@ public sealed class DestinationEndpointsTests
                 services.AddSingleton<IDestinationRepository>(new Destinations());
                 services.RemoveAll<IDestinationDetailsRepository>();
                 services.AddSingleton<IDestinationDetailsRepository>(new Details());
+                services.RemoveAll<IDestinationImportService>();
+                services.AddSingleton<IDestinationImportService>(new Importer());
             });
         }
+    }
+
+    private sealed class Importer : IDestinationImportService
+    {
+        public Task<DestinationImportResult> ImportAsync(string qid, CancellationToken cancellationToken) =>
+            Task.FromResult(DestinationImportResult.Success("test-grad"));
     }
 
     private sealed class Details : IDestinationDetailsRepository

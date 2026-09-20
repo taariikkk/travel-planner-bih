@@ -88,7 +88,6 @@ public sealed class WikidataProviderTests
         var factory = new FixtureHttpClientFactory(client);
         var options = Options.Create(new WikidataOptions
         {
-            UserAgent = "TravelPlannerBiH.Tests/1.0 (https://example.test)",
             ClassTypeMappings = new Dictionary<string, string> { ["Q515"] = "grad" },
             RegionEntityIds = new HashSet<string> { "Q300" }
         });

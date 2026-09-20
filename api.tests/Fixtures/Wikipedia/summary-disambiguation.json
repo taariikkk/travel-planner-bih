@@ -1,0 +1,5 @@
+{
+  "type": "disambiguation",
+  "extract": "Dovoljno dugačak tekst koji ipak ne smije proći zato što je ovo stranica za razvrstavanje različitih značenja istog naziva.",
+  "content_urls": { "desktop": { "page": "https://bs.wikipedia.org/wiki/Test" } }
+}

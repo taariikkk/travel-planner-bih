@@ -1,19 +1,32 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using TravelPlanner.Application.DTOs;
 using TravelPlanner.Application.Interfaces;
 
 namespace TravelPlanner.WebAPI.Endpoints;
 
-public static class DestinationEndpoints
+public static partial class DestinationEndpoints
 {
     public static IEndpointRouteBuilder MapDestinationEndpoints(this IEndpointRouteBuilder app)
     {
         var destinations = app.MapGroup("/api/destinations").RequireAuthorization();
         destinations.MapPost("/recommend", RecommendAsync);
+        destinations.MapPost("/import", ImportAsync).AllowAnonymous().RequireRateLimiting("destination-import");
         // Public curated destination content; personalized recommendations keep their existing authorization.
         destinations.MapGet("/{slug}", GetDetailsAsync).AllowAnonymous();
         return app;
+    }
+
+    private static async Task<IResult> ImportAsync(DestinationImportRequest? request, IDestinationImportService importer, CancellationToken cancellationToken)
+    {
+        if (request?.Qid is null || !QidPattern().IsMatch(request.Qid))
+            return Results.BadRequest(new { message = "Q-id mora biti u formatu Q i cifre." });
+
+        var result = await importer.ImportAsync(request.Qid, cancellationToken);
+        return result.IsSuccess
+            ? Results.Ok(new DestinationImportResponse(result.Slug!))
+            : Results.BadRequest(new { message = result.Error });
     }
 
     private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository, CancellationToken cancellationToken)
@@ -38,4 +51,7 @@ public static class DestinationEndpoints
             return Results.BadRequest(new { message = exception.Message });
         }
     }
+
+    [GeneratedRegex("^Q\\d+$", RegexOptions.CultureInvariant)]
+    private static partial Regex QidPattern();
 }

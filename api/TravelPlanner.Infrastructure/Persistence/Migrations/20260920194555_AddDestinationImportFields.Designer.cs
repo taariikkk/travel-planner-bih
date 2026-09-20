@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -10,12 +11,14 @@ using TravelPlanner.Api.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace TravelPlanner.Api.Migrations
+namespace TravelPlanner.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920194555_AddDestinationImportFields")]
+    partial class AddDestinationImportFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,18 +88,12 @@ namespace TravelPlanner.Api.Migrations
                     b.Property<string>("DescriptionEn")
                         .HasColumnType("text");
 
-                    b.Property<string>("DescriptionEnLicense")
-                        .HasColumnType("text");
-
                     b.Property<string>("DescriptionEnSourceUrl")
                         .HasColumnType("text");
 
                     b.Property<string>("DescriptionLanguage")
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
-
-                    b.Property<string>("DescriptionLicense")
-                        .HasColumnType("text");
 
                     b.Property<string>("DescriptionSourceUrl")
                         .HasColumnType("text");

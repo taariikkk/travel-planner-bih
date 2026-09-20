@@ -32,6 +32,10 @@ public sealed partial class WikidataProvider(IHttpClientFactory httpClientFactor
         {
             return DestinationDataSearchResult.Failure("Wikidata request timed out.");
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (HttpRequestException)
         {
             return DestinationDataSearchResult.Failure("Wikidata request failed.");
@@ -66,6 +70,10 @@ public sealed partial class WikidataProvider(IHttpClientFactory httpClientFactor
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return DestinationDataResult.Failure("Wikidata request timed out.");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (HttpRequestException)
         {
