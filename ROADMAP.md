@@ -157,14 +157,14 @@ Osnovna mapa radi (marker Mostara, "Oko tebe 0" ispravno prikazuje prazno
 stanje dok `Place` tabela nije popunjena). Ovi zadaci nadograđuju taj isti
 prikaz da iskoristi više Mapbox mogućnosti, bez izmjene backend logike:
 
-- [ ] Marker clustering — kad destinacija ima puno `Place` zapisa (npr.
+- [x] Marker clustering — kad destinacija ima puno `Place` zapisa (npr.
       Sarajevo nakon Overpass integracije), grupiše markere u brojeve
       umjesto preklapanja; testirati na destinaciji sa najviše mjesta
-- [ ] Popup/tooltip na klik markera — naziv mjesta, kategorija (Atrakcija/
+- [x] Popup/tooltip na klik markera — naziv mjesta, kategorija (Atrakcija/
       Restoran), bez napuštanja stranice
-- [ ] Fit bounds — mapa se automatski centrira/zumira da prikaže destinaciju
+- [x] Fit bounds — mapa se automatski centrira/zumira da prikaže destinaciju
       i sva obližnja mjesta odjednom, umjesto fiksnog zoom nivoa
-- [ ] Pripremiti Directions API poziv kao reusable funkciju/servis iza
+- [x] Pripremiti Directions API poziv kao reusable funkciju/servis iza
       `IRoutingProvider` (koristi se kasnije za rutu u itinereru, Sedmica 5-6 —
       ne implementirati punu funkcionalnost ovdje, samo osnovni wrapper)
 

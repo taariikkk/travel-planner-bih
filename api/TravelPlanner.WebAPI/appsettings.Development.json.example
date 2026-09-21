@@ -4,5 +4,8 @@
   },
   "Jwt": {
     "Key": "replace-with-a-development-jwt-signing-key-at-least-32-characters-long"
+  },
+  "Mapbox": {
+    "AccessToken": "pk.your_mapbox_access_token"
   }
 }

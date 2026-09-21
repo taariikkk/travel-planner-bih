@@ -59,6 +59,32 @@ public sealed class DestinationEndpointsTests
     }
 
     [Fact]
+    public async Task Map_places_is_public_and_returns_the_complete_collection()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+
+        var places = await client.GetFromJsonAsync<DestinationMapPlaceResponse[]>("/api/destinations/sarajevo/map-places");
+
+        Assert.NotNull(places);
+        Assert.Equal(80, places.Length);
+        Assert.Equal("Mjesto 00", places[0].Name);
+    }
+
+    [Fact]
+    public async Task Map_places_returns_empty_and_not_found_states()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+
+        var empty = await client.GetFromJsonAsync<DestinationMapPlaceResponse[]>("/api/destinations/trebinje/map-places");
+        var missing = await client.GetAsync("/api/destinations/missing/map-places");
+
+        Assert.Empty(empty!);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
     public async Task Recommend_requires_a_token()
     {
         using var factory = new ApiFactory();
@@ -188,6 +214,8 @@ public sealed class DestinationEndpointsTests
                 services.AddSingleton<IDestinationRepository>(new Destinations());
                 services.RemoveAll<IDestinationDetailsRepository>();
                 services.AddSingleton<IDestinationDetailsRepository>(new Details());
+                services.RemoveAll<IDestinationMapRepository>();
+                services.AddSingleton<IDestinationMapRepository>(new MapPlaces());
                 services.RemoveAll<IDestinationImportService>();
                 services.AddSingleton<IDestinationImportService>(new Importer());
                 services.RemoveAll<IDestinationSearchService>();
@@ -225,6 +253,22 @@ public sealed class DestinationEndpointsTests
             Task.FromResult(new DestinationSearchResponse(
                 [new(Guid.NewGuid(), "bjelasnica", "Bjelašnica", "planina", "Sarajevski kanton", "Opis", "manual", null, null, null)],
                 new(["planina"], ["Sarajevski kanton"]), true));
+    }
+
+    private sealed class MapPlaces : IDestinationMapRepository
+    {
+        public Task<IReadOnlyList<DestinationMapPlaceResponse>?> GetPlacesBySlugAsync(string slug, CancellationToken cancellationToken)
+        {
+            IReadOnlyList<DestinationMapPlaceResponse>? places = slug switch
+            {
+                "sarajevo" => Enumerable.Range(0, 80).Select(index => new DestinationMapPlaceResponse(
+                    Guid.NewGuid(), $"Mjesto {index:00}", index % 2 == 0 ? "attraction" : "restaurant",
+                    43.84 + index * 0.0001, 18.39 + index * 0.0001)).ToArray(),
+                "trebinje" => [],
+                _ => null
+            };
+            return Task.FromResult(places);
+        }
     }
 
     private sealed class Users : IUserRepository

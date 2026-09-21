@@ -40,6 +40,9 @@ public static class DependencyInjection
         if (importOptions.TtlHours <= 0 || importOptions.DefaultSuggestedStayMinDays <= 0
             || importOptions.DefaultSuggestedStayMaxDays < importOptions.DefaultSuggestedStayMinDays)
             throw new InvalidOperationException("Destination import configuration is invalid.");
+        var mapboxOptions = configuration.GetSection(MapboxOptions.SectionName).Get<MapboxOptions>() ?? new MapboxOptions();
+        if (!Uri.TryCreate(mapboxOptions.BaseUrl, UriKind.Absolute, out var mapboxBaseUri) || mapboxOptions.TimeoutSeconds <= 0)
+            throw new InvalidOperationException("Mapbox configuration is invalid.");
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(importOptions);
@@ -47,6 +50,7 @@ public static class DependencyInjection
         services.Configure<WikidataOptions>(configuration.GetSection(WikidataOptions.SectionName));
         services.Configure<WikipediaOptions>(configuration.GetSection(WikipediaOptions.SectionName));
         services.Configure<WikimediaCommonsOptions>(configuration.GetSection(WikimediaCommonsOptions.SectionName));
+        services.Configure<MapboxOptions>(configuration.GetSection(MapboxOptions.SectionName));
         services.AddSingleton<IWikimediaRequestGate, WikimediaRequestGate>();
         services.AddTransient<WikimediaRateLimitHandler>();
         services.AddHttpClient(WikidataProvider.ClientName, client =>
@@ -59,6 +63,11 @@ public static class DependencyInjection
             .AddHttpMessageHandler<WikimediaRateLimitHandler>();
         services.AddHttpClient(WikimediaCommonsImageProvider.ClientName, client => ConfigureWikimediaClient(client, wikimediaOptions))
             .AddHttpMessageHandler<WikimediaRateLimitHandler>();
+        services.AddHttpClient(MapboxDirectionsProvider.ClientName, client =>
+        {
+            client.BaseAddress = mapboxBaseUri;
+            client.Timeout = TimeSpan.FromSeconds(mapboxOptions.TimeoutSeconds);
+        });
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? throw new InvalidOperationException("JWT configuration was not found.");
@@ -69,11 +78,13 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IDestinationRepository, DestinationRepository>();
         services.AddScoped<IDestinationDetailsRepository, DestinationDetailsRepository>();
+        services.AddScoped<IDestinationMapRepository, DestinationMapRepository>();
         services.AddScoped<IDestinationSearchRepository, DestinationSearchRepository>();
         services.AddScoped<ISavedPlaceRepository, SavedPlaceRepository>();
         services.AddScoped<IDestinationDataProvider, WikidataProvider>();
         services.AddScoped<IWikipediaSummaryProvider, WikipediaSummaryProvider>();
         services.AddScoped<IImageProvider, WikimediaCommonsImageProvider>();
+        services.AddScoped<IRoutingProvider, MapboxDirectionsProvider>();
         services.AddScoped<IDestinationImportRepository, DestinationImportRepository>();
         services.AddScoped<SeedWikidataIdsSeeder>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();

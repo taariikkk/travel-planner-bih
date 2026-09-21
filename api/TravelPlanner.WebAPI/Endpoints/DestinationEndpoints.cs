@@ -15,7 +15,14 @@ public static partial class DestinationEndpoints
         destinations.MapPost("/import", ImportAsync).AllowAnonymous().RequireRateLimiting("destination-import");
         // Public curated destination content; personalized recommendations keep their existing authorization.
         destinations.MapGet("/{slug}", GetDetailsAsync).AllowAnonymous();
+        destinations.MapGet("/{slug}/map-places", GetMapPlacesAsync).AllowAnonymous();
         return app;
+    }
+
+    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository, CancellationToken cancellationToken)
+    {
+        var places = await repository.GetPlacesBySlugAsync(slug, cancellationToken);
+        return places is null ? Results.NotFound() : Results.Ok(places);
     }
 
     private static async Task<IResult> ImportAsync(DestinationImportRequest? request, IDestinationImportService importer, CancellationToken cancellationToken)
