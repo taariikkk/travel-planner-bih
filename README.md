@@ -200,6 +200,12 @@ Lokalna konfiguracija je u ignorisanom
 `ConnectionStrings__DefaultConnection` i `Jwt__Key` kroz environment varijable.
 .NET ne učitava `.env` automatski.
 
+Wikidata Q-id veze za ručno seedovane destinacije unose se u
+`api/TravelPlanner.WebAPI/SeedData/seed-wikidata-ids.json`. Vrijednost `null`
+znači da se taj slug preskače. Pri pokretanju API-ja se upisuju samo prazni
+`ExternalId` zapisi, `Source` ostaje `manual`, a duplirani Q-id-ovi zaustavljaju
+pokretanje s jasnom greškom.
+
 Testovi: `dotnet test api/TravelPlanner.sln`.
 EF migracije ostaju sadržajno nepromijenjene; nove izmjene modela idu kroz nove migracije.
 Namespace-ovi postojećih entiteta i konteksta zadržani su radi kompatibilnosti EF snapshot-a.

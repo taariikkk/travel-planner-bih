@@ -74,6 +74,7 @@ public static class DependencyInjection
         services.AddScoped<IWikipediaSummaryProvider, WikipediaSummaryProvider>();
         services.AddScoped<IImageProvider, WikimediaCommonsImageProvider>();
         services.AddScoped<IDestinationImportRepository, DestinationImportRepository>();
+        services.AddScoped<SeedWikidataIdsSeeder>();
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 

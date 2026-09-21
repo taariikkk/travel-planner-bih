@@ -57,8 +57,16 @@ public sealed partial class DestinationImportService(
                 Slug = await CreateUniqueSlugAsync(name, data.Region?.NameBs ?? data.Region?.NameEn, normalizedQid, cancellationToken)
             };
 
-            ApplyImportedData(destination, data, summaries,
-                imageResult.IsSuccess ? imageResult.Image : null, now);
+            if (existing is null)
+            {
+                ApplyImportedData(destination, data, summaries,
+                    imageResult.IsSuccess ? imageResult.Image : null, now);
+            }
+            else
+            {
+                ApplyMissingImportedData(destination, data, summaries,
+                    imageResult.IsSuccess ? imageResult.Image : null, now);
+            }
 
             if (existing is null)
                 destination = await destinations.AddAsync(destination, cancellationToken);
@@ -140,6 +148,39 @@ public sealed partial class DestinationImportService(
         destination.ImportedAt = importedAt;
         if (!string.Equals(destination.Source, "manual", StringComparison.OrdinalIgnoreCase))
             destination.Source = "wikidata";
+    }
+
+    private static void ApplyMissingImportedData(Destination destination, DestinationData data, WikipediaSummaries summaries, DestinationImage? image, DateTimeOffset importedAt)
+    {
+        if (destination.ElevationM is null && !IsManual(destination, nameof(Destination.ElevationM)))
+            destination.ElevationM = data.ElevationM;
+        if (destination.Population is null && !IsManual(destination, nameof(Destination.Population)))
+            destination.Population = data.Population is > int.MaxValue ? int.MaxValue : (int?)data.Population;
+
+        if (string.IsNullOrWhiteSpace(destination.Description) && !IsManual(destination, nameof(Destination.Description)))
+        {
+            destination.Description = summaries.Bosnian?.Text ?? string.Empty;
+            destination.DescriptionSourceUrl = summaries.Bosnian?.ArticleUrl;
+            destination.DescriptionLicense = summaries.Bosnian?.License;
+            destination.DescriptionLanguage = summaries.Bosnian is null ? null : "bs";
+        }
+
+        if (string.IsNullOrWhiteSpace(destination.DescriptionEn) && !IsManual(destination, nameof(Destination.DescriptionEn)))
+        {
+            destination.DescriptionEn = summaries.English?.Text;
+            destination.DescriptionEnSourceUrl = summaries.English?.ArticleUrl;
+            destination.DescriptionEnLicense = summaries.English?.License;
+        }
+
+        if (string.IsNullOrWhiteSpace(destination.ImageUrl) && !IsManual(destination, nameof(Destination.ImageUrl)))
+        {
+            destination.ImageUrl = image?.Url;
+            destination.ImageAuthor = image?.Author;
+            destination.ImageLicense = image?.License;
+            destination.ImageSourceUrl = image?.SourceUrl;
+        }
+
+        destination.ImportedAt = importedAt;
     }
 
     private async Task<string> CreateUniqueSlugAsync(string name, string? region, string qid, CancellationToken cancellationToken)

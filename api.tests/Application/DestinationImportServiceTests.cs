@@ -2,6 +2,7 @@ using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Application.DTOs;
 using TravelPlanner.Application.Interfaces;
 using TravelPlanner.Application.Services;
+using TravelPlanner.Api.Infrastructure.Persistence;
 using Xunit;
 
 namespace TravelPlanner.Api.Tests.Application;
@@ -95,8 +96,96 @@ public sealed class DestinationImportServiceTests
         Assert.Equal("planina", existing.Type);
         Assert.Equal(44.1, existing.Latitude);
         Assert.Equal(17.1, existing.Longitude);
-        Assert.Equal("Kanton test", existing.Region);
+        Assert.Equal("Stara regija", existing.Region);
         Assert.Equal("manual", existing.Source);
+    }
+
+    [Fact]
+    public async Task Import_enriches_only_missing_fields_of_a_linked_manual_destination()
+    {
+        var existing = ExistingDestination("Q901", "mostar");
+        existing.Source = "manual";
+        existing.ImportedAt = Now.AddDays(-30);
+        existing.Name = "Ručni Mostar";
+        existing.Type = "planina";
+        existing.Region = "Ručna regija";
+        existing.Latitude = 44.1;
+        existing.Longitude = 17.1;
+        existing.Description = "Ručni bosanski opis";
+        existing.DescriptionEn = null;
+        existing.ElevationM = null;
+        existing.Population = null;
+        existing.ImageUrl = null;
+        existing.Tags = ["historija"];
+        var repository = new ImportRepository([existing]);
+        var service = CreateService(repository, Data(name: "Uvezeni naziv"));
+
+        var result = await service.ImportAsync("Q901", default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("mostar", result.Slug);
+        Assert.Single(repository.Items);
+        Assert.Equal("manual", existing.Source);
+        Assert.Equal("Ručni Mostar", existing.Name);
+        Assert.Equal("planina", existing.Type);
+        Assert.Equal("Ručna regija", existing.Region);
+        Assert.Equal(44.1, existing.Latitude);
+        Assert.Equal(17.1, existing.Longitude);
+        Assert.Equal("Ručni bosanski opis", existing.Description);
+        Assert.Equal("English sufficient description", existing.DescriptionEn);
+        Assert.Equal(518, existing.ElevationM);
+        Assert.Equal(275524, existing.Population);
+        Assert.Equal("https://images.test/test.jpg", existing.ImageUrl);
+        Assert.Equal(["historija"], existing.Tags);
+    }
+
+    [Fact]
+    public async Task Reimport_of_a_linked_manual_destination_keeps_one_record_and_its_slug()
+    {
+        var existing = ExistingDestination("Q902", "rucni-mostar");
+        existing.Source = "manual";
+        existing.ImportedAt = Now.AddDays(-30);
+        var repository = new ImportRepository([existing]);
+        var provider = new DestinationProvider(Data());
+        var service = CreateService(repository, wikidata: provider);
+
+        await service.ImportAsync("Q902", default);
+        existing.ImportedAt = Now.AddDays(-30);
+        var result = await service.ImportAsync("Q902", default);
+
+        Assert.Equal("rucni-mostar", result.Slug);
+        Assert.Single(repository.Items);
+        Assert.Equal(2, provider.CallCount);
+    }
+
+    [Fact]
+    public void Seed_wikidata_configuration_rejects_duplicate_qids()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => SeedWikidataIds.Parse("""
+            {
+              "mostar": "Q123",
+              "sarajevo": "q123"
+            }
+            """));
+
+        Assert.Contains("Q123", exception.Message);
+    }
+
+    [Fact]
+    public void Seed_wikidata_configuration_assigns_ids_without_changing_manual_source()
+    {
+        var destination = new Destination { Id = Guid.NewGuid(), Slug = "mostar", Source = "manual" };
+        var mappings = SeedWikidataIds.Parse("""
+            {
+              "mostar": "Q456",
+              "sarajevo": null
+            }
+            """);
+
+        SeedWikidataIds.Apply(mappings, [destination]);
+
+        Assert.Equal("Q456", destination.ExternalId);
+        Assert.Equal("manual", destination.Source);
     }
 
     [Fact]

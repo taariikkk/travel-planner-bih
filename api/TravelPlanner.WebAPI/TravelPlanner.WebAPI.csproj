@@ -11,4 +11,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11" PrivateAssets="all" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Update="SeedData/seed-wikidata-ids.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

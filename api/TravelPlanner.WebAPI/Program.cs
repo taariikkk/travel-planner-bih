@@ -1,5 +1,6 @@
 using TravelPlanner.Application;
 using TravelPlanner.Infrastructure;
+using TravelPlanner.Api.Infrastructure.Persistence;
 using TravelPlanner.WebAPI.Endpoints;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.RateLimiting;
@@ -64,6 +65,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<SeedWikidataIdsSeeder>()
+        .SeedAsync(CancellationToken.None);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
