@@ -13,6 +13,7 @@ export type AuthResponse = {
 
 export type Recommendation = {
   id: string;
+  slug: string;
   name: string;
   region: string;
   description: string;

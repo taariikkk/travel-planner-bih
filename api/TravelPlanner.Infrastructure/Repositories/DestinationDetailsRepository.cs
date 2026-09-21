@@ -33,8 +33,12 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
             && sarajevo is { Latitude: not null, Longitude: not null }
             ? await context.Database.SqlQuery<double>(DestinationDistance.QueryKm(destination.Latitude.Value, destination.Longitude.Value, sarajevo.Latitude.Value, sarajevo.Longitude.Value)).SingleAsync(cancellationToken)
             : (double?)null;
-        var usingEnglishImport = language == "en" && translation is null && !string.IsNullOrWhiteSpace(destination.DescriptionEn);
-        var description = translation?.Description ?? (usingEnglishImport ? destination.DescriptionEn! : destination.Description);
+        var usingEnglishImport = translation is null && !string.IsNullOrWhiteSpace(destination.DescriptionEn)
+            && (language == "en" || string.IsNullOrWhiteSpace(destination.Description));
+        var description = translation?.Description
+            ?? (usingEnglishImport ? destination.DescriptionEn! : destination.Description);
+        var descriptionLanguage = translation?.LanguageCode
+            ?? (usingEnglishImport ? "en" : destination.DescriptionLanguage ?? "bs");
         var attribution = destination.Source.Equals("wikidata", StringComparison.OrdinalIgnoreCase) && translation is null
             ? usingEnglishImport
                 ? CreateTextAttribution(destination.DescriptionEnLicense, destination.DescriptionEnSourceUrl)
@@ -51,7 +55,7 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
             translation?.BestTimeToVisit ?? destination.BestTimeToVisit,
             destination.SuggestedStayMinDays, destination.SuggestedStayMaxDays, destination.Tags,
             destination.Latitude, destination.Longitude, placeResponses, distance, destination.ElevationM,
-            null, destination.Population, destination.ImageUrl, imageAttribution, attribution);
+            null, destination.Population, destination.ImageUrl, imageAttribution, attribution, descriptionLanguage);
     }
 
     private static TextAttributionResponse? CreateTextAttribution(string? license, string? url) =>

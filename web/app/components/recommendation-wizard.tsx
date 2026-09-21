@@ -9,17 +9,6 @@ import { useLanguage } from "./language-provider";
 import { useAuth } from "./auth-provider";
 import styles from "./recommendation-wizard.module.css";
 
-
-function destinationSlug(name: string) {
-  return name
-    .toLocaleLowerCase("bs")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export function RecommendationWizard() {
   const language = useLanguage();
   const t = text[language].rec;
@@ -135,7 +124,7 @@ export function RecommendationWizard() {
                     <p>{result.region}</p>
                     <h3>{result.name}</h3>
                     <div className={styles.tags}>{result.tags.map((tag) => <span key={tag}>{formatTag(tag, language)}</span>)}</div>
-                    <Link className={styles.destinationLink} href={`/destinations/${destinationSlug(result.name)}#mapa`}>
+                    <Link className={styles.destinationLink} href={`/destinations/${result.slug}#mapa`}>
                       {t.map} <span aria-hidden="true">↗</span>
                     </Link>
                   </div>

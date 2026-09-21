@@ -43,8 +43,9 @@ public sealed partial class DestinationImportService(
                 return DestinationImportResult.Failure("Wikidata entitet nema naziv.");
 
             var summariesResult = await wikipedia.GetSummariesAsync(data.BosnianWikipediaArticle, data.EnglishWikipediaArticle, cancellationToken);
-            if (!summariesResult.IsSuccess || summariesResult.Summaries is null)
-                return DestinationImportResult.Failure(summariesResult.Error ?? "Wikipedia sažetak nije dostupan.");
+            var summaries = summariesResult.IsSuccess && summariesResult.Summaries is not null
+                ? summariesResult.Summaries
+                : new WikipediaSummaries(null, null);
 
             var imageResult = await images.GetImageAsync(data.ImageName, cancellationToken);
 
@@ -56,7 +57,7 @@ public sealed partial class DestinationImportService(
                 Slug = await CreateUniqueSlugAsync(name, data.Region?.NameBs ?? data.Region?.NameEn, normalizedQid, cancellationToken)
             };
 
-            ApplyImportedData(destination, data, summariesResult.Summaries,
+            ApplyImportedData(destination, data, summaries,
                 imageResult.IsSuccess ? imageResult.Image : null, now);
 
             if (existing is null)

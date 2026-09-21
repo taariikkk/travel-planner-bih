@@ -146,6 +146,24 @@ public sealed class DestinationImportServiceTests
     }
 
     [Fact]
+    public async Task Import_succeeds_without_Wikipedia_and_excludes_the_destination_from_recommendations()
+    {
+        var repository = new ImportRepository();
+        var service = new DestinationImportService(
+            new DestinationProvider(Data()), new UnavailableSummaryProvider(), new ImageProvider(), repository,
+            new DestinationImportOptions { TtlHours = 24, DefaultBudgetTier = "standard", DefaultSuggestedStayMinDays = 1, DefaultSuggestedStayMaxDays = 3 },
+            new FixedTimeProvider(Now));
+
+        var result = await service.ImportAsync("Q889", default);
+
+        Assert.True(result.IsSuccess);
+        var destination = Assert.Single(repository.Items);
+        Assert.Empty(destination.Description);
+        Assert.False(destination.IsRecommendationEligible);
+        Assert.Equal("https://images.test/test.jpg", destination.ImageUrl);
+    }
+
+    [Fact]
     public async Task Insufficient_description_is_stored_but_excluded_from_recommendations()
     {
         var repository = new ImportRepository();
@@ -225,6 +243,12 @@ public sealed class DestinationImportServiceTests
             Task.FromResult(WikipediaSummaryResult.Success(
                 new WikipediaSummary("Bosanski dovoljno dug opis", "https://bs.wikipedia.test/Test", "CC BY-SA", sufficient),
                 new WikipediaSummary("English sufficient description", "https://en.wikipedia.test/Test", "CC BY-SA", true)));
+    }
+
+    private sealed class UnavailableSummaryProvider : IWikipediaSummaryProvider
+    {
+        public Task<WikipediaSummaryResult> GetSummariesAsync(string? bosnianArticle, string? englishArticle, CancellationToken cancellationToken) =>
+            Task.FromResult(WikipediaSummaryResult.Failure("Wikipedia unavailable"));
     }
 
     private sealed class ImageProvider : IImageProvider

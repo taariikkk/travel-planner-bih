@@ -62,6 +62,7 @@ public sealed class RecommendationService(IUserRepository users, IDestinationRep
         var bestTime = translation?.BestTimeToVisit ?? item.Destination.BestTimeToVisit;
         return new(
             item.Destination.Id,
+            item.Destination.Slug,
             item.Destination.Name,
             item.Destination.Region,
             description,

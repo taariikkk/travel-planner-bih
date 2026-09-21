@@ -21,6 +21,7 @@ public sealed class RecommendationServiceTests
         var result = await service.RecommendAsync(user.Id, new("standard", 3, "summer", "bs"), CancellationToken.None);
 
         var recommendation = Assert.Single(result!);
+        Assert.Equal("bjelasnica", recommendation.Slug);
         Assert.Equal(15, recommendation.Score);
         Assert.Equal(["Planina", "priroda"], recommendation.Reasons.MatchingTags);
         Assert.True(recommendation.Reasons.MatchesSeason);
@@ -158,7 +159,7 @@ public sealed class RecommendationServiceTests
 
     private static Destination Destination(string name, List<string> tags, string budget, int minDays, int maxDays, List<string> seasons) => new()
     {
-        Id = Guid.NewGuid(), Name = name, Region = "BiH", Description = "Opis", BestTimeToVisit = "Ljeto", Tags = tags,
+        Id = Guid.NewGuid(), Slug = name.ToLowerInvariant().Replace("š", "s").Replace("ž", "z").Replace("ć", "c").Replace("č", "c"), Name = name, Region = "BiH", Description = "Opis", BestTimeToVisit = "Ljeto", Tags = tags,
         BudgetTier = budget, SuggestedStayMinDays = minDays, SuggestedStayMaxDays = maxDays, BestSeasons = seasons
     };
 

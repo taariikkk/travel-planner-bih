@@ -5,7 +5,7 @@ public sealed record DestinationDetailsResponse(Guid Id, string Slug, string Nam
     IReadOnlyList<string> Tags, double? Latitude, double? Longitude, IReadOnlyList<PlaceResponse> Places,
     double? DistanceFromSarajevoKm = null, double? ElevationMeters = null, double? AverageTemperatureC = null,
     int? Population = null, string? ImageUrl = null, ImageAttributionResponse? ImageAttribution = null,
-    TextAttributionResponse? DescriptionAttribution = null);
+    TextAttributionResponse? DescriptionAttribution = null, string? DescriptionLanguage = null);
 
 public sealed record ImageAttributionResponse(string Author, string License, string Url);
 public sealed record TextAttributionResponse(string License, string Url);

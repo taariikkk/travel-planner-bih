@@ -112,6 +112,7 @@ public sealed class DestinationEndpointsTests
         Assert.Equal(HttpStatusCode.BadRequest, missingLanguage.StatusCode);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(5, results.RootElement.GetArrayLength());
+        Assert.False(string.IsNullOrWhiteSpace(results.RootElement[0].GetProperty("slug").GetString()));
         Assert.Equal("English description", results.RootElement[0].GetProperty("description").GetString());
         var reasons = results.RootElement[0].GetProperty("reasons");
         Assert.Empty(reasons.GetProperty("matchingTags").EnumerateArray());
@@ -192,7 +193,7 @@ public sealed class DestinationEndpointsTests
     {
         private readonly IReadOnlyList<Destination> destinations = Enumerable.Range(1, 6).Select(index => new Destination
         {
-            Id = Guid.NewGuid(), Name = $"Grad {index}", Region = "BiH", Description = "Opis", BestTimeToVisit = "Ljeto",
+            Id = Guid.NewGuid(), Slug = $"grad-{index}", Name = $"Grad {index}", Region = "BiH", Description = "Opis", BestTimeToVisit = "Ljeto",
             BudgetTier = "standard", SuggestedStayMinDays = 2, SuggestedStayMaxDays = 4, BestSeasons = ["summer"], Tags = ["historija"],
             Translations = [new() { LanguageCode = "en", Description = "English description", BestTimeToVisit = "Summer" }]
         }).ToList();

@@ -36,6 +36,7 @@ public sealed class DestinationImportRepositoryTests
         Assert.Equal(destination.ImageUrl, result.ImageUrl);
         Assert.Equal("Test author", result.ImageAttribution!.Author);
         Assert.Equal("CC BY-SA", result.DescriptionAttribution!.License);
+        Assert.Equal("bs", result.DescriptionLanguage);
         Assert.Equal(destination.Latitude, result.Latitude);
         await context.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM \"Destination\" WHERE \"Id\" = {destination.Id}");
     }

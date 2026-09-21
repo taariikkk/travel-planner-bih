@@ -2,6 +2,7 @@ namespace TravelPlanner.Application.DTOs;
 
 public sealed record DestinationRecommendationResponse(
     Guid Id,
+    string Slug,
     string Name,
     string Region,
     string Description,

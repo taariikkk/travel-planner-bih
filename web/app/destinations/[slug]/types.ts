@@ -7,5 +7,5 @@ export type Destination = {
   tags: string[]; latitude?: number | null; longitude?: number | null; places: Place[];
   distanceFromSarajevoKm?: number | null; elevationMeters?: number | null; averageTemperatureC?: number | null;
   population?: number | null; imageUrl?: string | null; imageAttribution?: ImageAttribution | null;
-  descriptionAttribution?: TextAttribution | null;
+  descriptionAttribution?: TextAttribution | null; descriptionLanguage?: "bs" | "en" | null;
 };
