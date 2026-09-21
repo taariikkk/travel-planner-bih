@@ -1,13 +1,13 @@
 {
-  "sarajevo": null,
-  "mostar": null,
-  "trebinje": null,
-  "neum": null,
-  "jahorina": null,
-  "bjelasnica": null,
-  "banja-luka": null,
-  "travnik": null,
-  "pocitelj": null,
-  "visegrad": null,
-  "jajce": null
+  "sarajevo": "Q11194",
+  "mostar": "Q93347",
+  "trebinje": "Q690052",
+  "neum": "Q320623",
+  "jahorina": "Q187944",
+  "bjelasnica": "Q879414",
+  "banja-luka": "Q131127",
+  "travnik": "Q159818",
+  "pocitelj": "Q994359",
+  "visegrad": "Q239266",
+  "jajce": "Q258429"
 }
