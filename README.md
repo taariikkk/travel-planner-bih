@@ -260,6 +260,17 @@ destinacijama). Test liste koristi privremenu tabelu i rollback, bez izmjene
 stvarnih mjesta. Bez te varijable integracijski testovi se preskaču; unit test
 SQL izraza i jedinica izvršava se uvijek.
 
+## Napomene za pretragu i Istraži
+
+`GET /api/search` prima opcione `q`, `type`, `region` i `language` parametre.
+Prazan upit vraća do 12 lokalnih destinacija, sa ručno kuriranim zapisima prije
+uvezenih. Pretraga naziva koristi indeksirani `unaccent` + `pg_trgm`, pa upit
+`Bjelasnica` pronalazi `Bjelašnica`. Kada neprazan upit ima manje od šest lokalnih
+rezultata, Wikidata fallback dopunjava bazu kroz postojeći TTL import tok; greška
+vanjskog provajdera ne uklanja već pronađene lokalne rezultate. `/explore` koristi
+server-renderovane URL parametre, filtere po tipu i regiji i ne uvodi client-side
+biblioteku za dohvat podataka.
+
 ## Monetizacija (buduća faza)
 
 - Freemium model prilagođen BiH kupovnoj moći (5-10 KM/mjesečno Premium)

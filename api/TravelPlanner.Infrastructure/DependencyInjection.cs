@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IDestinationRepository, DestinationRepository>();
         services.AddScoped<IDestinationDetailsRepository, DestinationDetailsRepository>();
+        services.AddScoped<IDestinationSearchRepository, DestinationSearchRepository>();
         services.AddScoped<ISavedPlaceRepository, SavedPlaceRepository>();
         services.AddScoped<IDestinationDataProvider, WikidataProvider>();
         services.AddScoped<IWikipediaSummaryProvider, WikipediaSummaryProvider>();

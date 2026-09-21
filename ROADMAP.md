@@ -141,10 +141,10 @@ zahtjev sa TTL kešom, bez Hangfirea.
 - [ ] Unit testovi (mapiranje odgovora, prioritet ručnih polja, TTL) i integration test adaptera
 
 ### Pretraga i "Istraži"
-- [ ] `GET /api/search?q=` — prvo lokalna baza (`unaccent` + `pg_trgm`), zatim Wikidata
+- [x] `GET /api/search?q=` — prvo lokalna baza (`unaccent` + `pg_trgm`), zatim Wikidata
       fallback ako je rezultata premalo; filter po tipu
-- [ ] Test: "Bjelasnica" pronalazi "Bjelašnica"
-- [ ] Frontend: stranica `/explore` — search bar, filteri po tipu i regiji, lista
+- [x] Test: "Bjelasnica" pronalazi "Bjelašnica"
+- [x] Frontend: stranica `/explore` — search bar, filteri po tipu i regiji, lista
       destinacija (kurirane prve, zatim uvezene) u postojećem editorijalnom stilu
       (bez kartica sa sjenkama)
 - [ ] Prikaz punog opisa i slike destinacije sa atribucijom

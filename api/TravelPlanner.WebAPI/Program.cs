@@ -24,6 +24,15 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             AutoReplenishment = true
         }));
+    options.AddPolicy("destination-search", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = builder.Configuration.GetValue("RateLimiting:DestinationSearchPermitLimit", 20),
+            Window = TimeSpan.FromSeconds(builder.Configuration.GetValue("RateLimiting:DestinationSearchWindowSeconds", 60)),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
 });
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"])
@@ -90,6 +99,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapDestinationEndpoints();
+app.MapSearchEndpoints();
 
 var summaries = new[]
 {

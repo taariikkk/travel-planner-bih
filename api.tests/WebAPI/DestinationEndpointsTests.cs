@@ -97,6 +97,41 @@ public sealed class DestinationEndpointsTests
     }
 
     [Fact]
+    public async Task Search_is_public_and_returns_filters_and_results()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/search?q=Bjelasnica&type=planina&region=Sarajevski%20kanton&language=bs");
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("bjelasnica", body.RootElement.GetProperty("items")[0].GetProperty("slug").GetString());
+        Assert.Equal("planina", body.RootElement.GetProperty("filters").GetProperty("types")[0].GetString());
+        Assert.True(body.RootElement.GetProperty("usedFallback").GetBoolean());
+    }
+
+    [Theory]
+    [InlineData("/api/search?language=de")]
+    [InlineData("/api/search?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public async Task Search_validates_language_and_query_length(string url)
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync(url)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Search_is_rate_limited_per_client_ip()
+    {
+        using var factory = new ApiFactory(searchPermitLimit: 1);
+        using var client = factory.CreateClient();
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/search?q=Mostar")).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.GetAsync("/api/search?q=Jajce")).StatusCode);
+    }
+
+    [Fact]
     public async Task Recommend_validates_request_and_returns_at_most_five_localized_results()
     {
         using var factory = new ApiFactory();
@@ -128,7 +163,7 @@ public sealed class DestinationEndpointsTests
         return body.RootElement.GetProperty("accessToken").GetString()!;
     }
 
-    private sealed class ApiFactory(int importPermitLimit = 5) : WebApplicationFactory<Program>
+    private sealed class ApiFactory(int importPermitLimit = 5, int searchPermitLimit = 20) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -140,7 +175,9 @@ public sealed class DestinationEndpointsTests
                 ["Jwt:Issuer"] = "TravelPlanner.Api.Tests",
                 ["Jwt:Audience"] = "TravelPlanner.Web.Tests",
                 ["RateLimiting:DestinationImportPermitLimit"] = importPermitLimit.ToString(),
-                ["RateLimiting:DestinationImportWindowSeconds"] = "60"
+                ["RateLimiting:DestinationImportWindowSeconds"] = "60",
+                ["RateLimiting:DestinationSearchPermitLimit"] = searchPermitLimit.ToString(),
+                ["RateLimiting:DestinationSearchWindowSeconds"] = "60"
             }));
             builder.ConfigureTestServices(services =>
             {
@@ -153,6 +190,8 @@ public sealed class DestinationEndpointsTests
                 services.AddSingleton<IDestinationDetailsRepository>(new Details());
                 services.RemoveAll<IDestinationImportService>();
                 services.AddSingleton<IDestinationImportService>(new Importer());
+                services.RemoveAll<IDestinationSearchService>();
+                services.AddSingleton<IDestinationSearchService>(new Search());
             });
         }
     }
@@ -178,6 +217,14 @@ public sealed class DestinationEndpointsTests
                 : null;
             return Task.FromResult(result);
         }
+    }
+
+    private sealed class Search : IDestinationSearchService
+    {
+        public Task<DestinationSearchResponse> SearchAsync(string? query, string? type, string? region, string language, CancellationToken cancellationToken) =>
+            Task.FromResult(new DestinationSearchResponse(
+                [new(Guid.NewGuid(), "bjelasnica", "Bjelašnica", "planina", "Sarajevski kanton", "Opis", "manual", null, null, null)],
+                new(["planina"], ["Sarajevski kanton"]), true));
     }
 
     private sealed class Users : IUserRepository
