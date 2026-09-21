@@ -134,8 +134,8 @@ zahtjev sa TTL kešom, bez Hangfirea.
       učestvuje u preporukama wizarda
 - [x] Opisan `User-Agent` i poštovanje rate limita za Wikimedia pozive
 - [x] Kontrola kvaliteta: zapis bez opisa ili sa preslabim opisom ne ulazi u preporuke
-- [ ] UI prikazuje smisleno prazno stanje umjesto lošeg sadržaja
-- [ ] Prikaz slike i atribucije (Wikipedia tekst, slike) i nadmorske visine iz Wikidata
+- [x] UI prikazuje smisleno prazno stanje umjesto lošeg sadržaja
+- [x] Prikaz slike i atribucije (Wikipedia tekst, slike) i nadmorske visine iz Wikidata
       na stranici destinacije
 - [ ] Opciono: komanda za pred-uvoz liste destinacija
 - [ ] Unit testovi (mapiranje odgovora, prioritet ručnih polja, TTL) i integration test adaptera

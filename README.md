@@ -165,13 +165,24 @@ docker compose up -d
 cd api
 dotnet restore
 dotnet ef database update --project TravelPlanner.Infrastructure --startup-project TravelPlanner.WebAPI -- --environment Development
-dotnet run --project TravelPlanner.WebAPI
+dotnet watch --project TravelPlanner.WebAPI --launch-profile http
 
 # Frontend (u novom terminalu)
 cd web
 npm install
 npm run dev
 ```
+
+Backend koristi `http://localhost:5138` (Swagger: `/swagger`), a frontend
+`NEXT_PUBLIC_API_URL=http://localhost:5138`.
+
+Ako pokretanje prijavi `address already in use` za port `5138`, provjeri
+`ss -ltnp '( sport = :5138 )'`. Zaustavi prethodnu instancu API-ja sa `Ctrl+C`
+u njenom terminalu prije ponovnog pokretanja. Ako terminal više nije dostupan,
+provjeri proces sa `ps -p <PID> -o pid,ppid,args` i tek kada potvrdiš da je to
+ovaj API zaustavi ga sa `kill -TERM <PID>`. Pokreći samo jednu instancu:
+`dotnet run`, `dotnet watch` i debugger koriste isti port; HTTP i HTTPS profili
+također dijele HTTP port `5138`.
 
 Environment varijable (API ključevi za Mapbox, AI provajder, connection
 string) idu u `.env` fajlove koji **nisu** u Git-u — vidi `.env.example` u

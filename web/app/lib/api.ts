@@ -30,7 +30,7 @@ export type RecommendationReasons = {
   matchesDuration: boolean;
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5215";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5138";
 
 export async function apiFetch(path: string, init: RequestInit = {}, token?: string): Promise<Response> {
   return fetch(`${apiUrl}${path}`, {
