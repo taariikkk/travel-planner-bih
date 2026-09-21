@@ -11,6 +11,13 @@ export type AuthResponse = {
   user: UserProfile;
 };
 
+export type SavedPlace = {
+  id: string;
+  destinationId: string | null;
+  placeId: string | null;
+  createdAt: string;
+};
+
 export type Recommendation = {
   id: string;
   slug: string;

@@ -100,6 +100,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapDestinationEndpoints();
 app.MapSearchEndpoints();
+app.MapSavedPlaceEndpoints();
 
 var summaries = new[]
 {

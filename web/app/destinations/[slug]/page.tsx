@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { apiFetch } from "../../lib/api";
 import { formatTag, getLanguage, LANGUAGE_COOKIE, text } from "../../lib/i18n";
 import DestinationMap from "./destination-map";
+import DestinationFavoriteButton from "./destination-favorite-button";
 import { formatDestinationStatistics } from "./destination-statistics";
 import type { Destination } from "./types";
 import styles from "./destination.module.css";
@@ -40,7 +41,7 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
         </figure>
         <div className={styles.heroCopy}>
           <p className={styles.region}>{destination.region ? `${destination.region} · ` : ""}{labels.country}</p>
-          <div className={styles.titleRow}><h1 id="destination-title">{destination.name}</h1><button type="button" className={styles.favorite} disabled aria-label={extra.favorite} title={extra.favoriteUnavailable}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>
+          <div className={styles.titleRow}><h1 id="destination-title">{destination.name}</h1><DestinationFavoriteButton destinationId={destination.id} slug={destination.slug} /></div>
           <ul className={styles.tags} aria-label={labels.interests}>{destination.tags.map((tag) => <li key={tag}>{formatTag(tag, language)}</li>)}</ul>
           <dl className={`${styles.statistics} ${statistics.length < 2 ? styles.statisticsCompact : ""}`}>{statistics.map((statistic) => <div key={statistic.label}><dt>{statistic.label}</dt><dd>{statistic.value}</dd></div>)}</dl>
         </div>
@@ -55,6 +56,6 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
     </div>
 
     <section id="mapa" className={styles.mapSection} aria-labelledby="map-title"><div className={styles.mapHeading}><div><span>05</span><h2 id="map-title">{labels.mapTitle}</h2></div><p>{labels.mapIntro}</p></div><DestinationMap destination={destination} token={publicToken} language={language} /></section>
-    <section className={styles.utilitySection} aria-labelledby="accommodation-title"><div><span>06</span><h2 id="accommodation-title">{extra.accommodation}</h2><p>{extra.accommodationEmpty}</p></div><div className={styles.plan}><button className={styles.action} disabled aria-describedby="planning-hint">{extra.plan}</button><p id="planning-hint">{extra.planHint}</p></div></section>
+    <section className={styles.utilitySection} aria-labelledby="accommodation-title"><div><span>06</span><h2 id="accommodation-title">{extra.accommodation}</h2><p>{extra.accommodationEmpty}</p></div><div className={styles.plan}><button className={styles.action} disabled aria-describedby="planning-hint">{extra.addToPlan}</button><p id="planning-hint">{extra.addToPlanHint}</p></div></section>
   </main>;
 }

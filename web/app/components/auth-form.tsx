@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { apiFetch, AuthResponse, getErrorMessage } from "../lib/api";
+import { getAuthModeHref, getSafeReturnTo } from "../lib/auth-return-to";
 import { text } from "../lib/i18n";
 import { useAuth } from "./auth-provider";
 import { useLanguage } from "./language-provider";
@@ -12,6 +13,7 @@ type AuthFormProps = { mode: "login" | "register" };
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { establishSession } = useAuth();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,6 +22,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isRegister = mode === "register";
   const t = text[useLanguage()].auth;
+  const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
+  const otherModeHref = getAuthModeHref(isRegister ? "/login" : "/register", returnTo);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,7 +34,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       if (!response.ok) throw new Error(await getErrorMessage(response, t.loginFailed));
       const result = (await response.json()) as AuthResponse;
       establishSession(result.accessToken, result.user);
-      router.replace("/recommendations");
+      router.replace(returnTo);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : t.unexpectedError);
     } finally {
@@ -50,7 +54,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           {error ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
           <button disabled={isSubmitting} className="w-full rounded-xl bg-[#075b3a] px-5 py-3.5 font-semibold text-white disabled:opacity-60">{isSubmitting ? t.submitting : isRegister ? t.register : t.login}</button>
         </form>
-        <p className="mt-7 text-sm text-[#607080]">{isRegister ? t.hasAccount : t.noAccount} <Link className="font-bold text-[#2563d9]" href={isRegister ? "/login" : "/register"}>{isRegister ? t.login : t.register}</Link></p>
+        <p className="mt-7 text-sm text-[#607080]">{isRegister ? t.hasAccount : t.noAccount} <Link className="font-bold text-[#2563d9]" href={otherModeHref}>{isRegister ? t.login : t.register}</Link></p>
       </section>
     </main>
   );

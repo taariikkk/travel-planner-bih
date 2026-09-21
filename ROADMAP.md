@@ -147,10 +147,10 @@ zahtjev sa TTL kešom, bez Hangfirea.
 - [x] Frontend: stranica `/explore` — search bar, filteri po tipu i regiji, lista
       destinacija (kurirane prve, zatim uvezene) u postojećem editorijalnom stilu
       (bez kartica sa sjenkama)
-- [ ] Prikaz punog opisa i slike destinacije sa atribucijom
-- [ ] Dugme "Dodaj u plan" (skriveno/onemogućeno dok Trip modul ne postoji)
-- [ ] Spremanje omiljenih: `SavedPlace` endpointi (dodaj/ukloni/lista) i UI (zahtijeva prijavu)
-- [ ] Loading, prazna i error stanja; BS/EN
+- [x] Prikaz punog opisa i slike destinacije sa atribucijom
+- [x] Dugme "Dodaj u plan" (skriveno/onemogućeno dok Trip modul ne postoji)
+- [x] Spremanje omiljenih: `SavedPlace` endpointi (dodaj/ukloni/lista) i UI (zahtijeva prijavu)
+- [x] Loading, prazna i error stanja; BS/EN
 
 ### Mapbox — puni potencijal (novo, prošireno nakon prvog prolaza)
 Osnovna mapa radi (marker Mostara, "Oko tebe 0" ispravno prikazuje prazno
