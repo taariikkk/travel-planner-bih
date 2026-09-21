@@ -28,6 +28,7 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
     { label: labels.bestTime, value: destination.bestTimeToVisit },
     ...(destination.averageTemperatureC != null ? [{ label: extra.temperature, value: `${number.format(destination.averageTemperatureC)} °C` }] : []),
   ];
+  const hasDescription = destination.description.trim().length > 0;
 
   return <main className={styles.page}>
     <nav className={styles.breadcrumb} aria-label={labels.breadcrumb}><Link href="/">{labels.home}</Link><span aria-hidden="true">/</span><Link href="/explore">{labels.explore}</Link><span aria-hidden="true">/</span><span>{destination.name}</span></nav>
@@ -38,7 +39,7 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
           {destination.imageAttribution ? <figcaption><span>{extra.attribution}: {destination.imageAttribution.author} · {destination.imageAttribution.license}</span><a href={destination.imageAttribution.url} target="_blank" rel="noreferrer">↗</a></figcaption> : null}
         </figure>
         <div className={styles.heroCopy}>
-          <p className={styles.region}>{destination.region} · {labels.country}</p>
+          <p className={styles.region}>{destination.region ? `${destination.region} · ` : ""}{labels.country}</p>
           <div className={styles.titleRow}><h1 id="destination-title">{destination.name}</h1><button type="button" className={styles.favorite} disabled aria-label={extra.favorite} title={extra.favoriteUnavailable}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></button></div>
           <ul className={styles.tags} aria-label={labels.interests}>{destination.tags.map((tag) => <li key={tag}>{formatTag(tag, language)}</li>)}</ul>
           <dl className={`${styles.statistics} ${statistics.length < 2 ? styles.statisticsCompact : ""}`}>{statistics.map((statistic) => <div key={statistic.label}><dt>{statistic.label}</dt><dd>{statistic.value}</dd></div>)}</dl>
@@ -46,9 +47,9 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
       </section>
 
       <div className={styles.detailColumn}>
-        <section className={styles.detailSection} aria-labelledby="overview-title"><span>01</span><div><h2 id="overview-title">{extra.overview}</h2><p>{destination.description}</p></div></section>
+        <section className={styles.detailSection} aria-labelledby="overview-title"><span>01</span><div><h2 id="overview-title">{extra.overview}</h2>{hasDescription ? <><p>{destination.description}</p>{destination.descriptionAttribution ? <p className={styles.attribution}>{extra.descriptionAttribution}: <a href={destination.descriptionAttribution.url} target="_blank" rel="noreferrer">{destination.descriptionAttribution.license} ↗</a></p> : null}</> : <p>{extra.descriptionEmpty}</p>}</div></section>
         <section className={styles.detailSection} aria-labelledby="weather-title"><span>02</span><div><h2 id="weather-title">{extra.weather}</h2><p>{extra.weatherEmpty}</p></div></section>
-        <section className={styles.detailSection} aria-labelledby="facts-title"><span>03</span><div><h2 id="facts-title">{extra.facts}</h2><dl className={styles.quickFacts}>{quickFacts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl></div></section>
+        <section className={styles.detailSection} aria-labelledby="facts-title"><span>03</span><div><h2 id="facts-title">{extra.facts}</h2>{quickFacts.length ? <dl className={styles.quickFacts}>{quickFacts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl> : <p>{extra.factsEmpty}</p>}</div></section>
         <section className={styles.detailSection} aria-labelledby="places-title"><span>04</span><div><h2 id="places-title">{extra.topPlaces}</h2>{destination.places.length ? <ul className={styles.topPlaces}>{destination.places.slice(0, 6).map((place) => <li key={place.id}>{place.imageUrl ? <Image src={place.imageUrl} alt="" width={76} height={76} unoptimized className={styles.placeImage} /> : null}<div><h3>{place.name}</h3><p>{(extra.categories as Record<string, string>)[place.category] ?? place.category}</p></div></li>)}</ul> : <p>{extra.topPlacesEmpty}</p>}</div></section>
       </div>
     </div>

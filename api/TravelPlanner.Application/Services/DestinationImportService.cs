@@ -47,8 +47,6 @@ public sealed partial class DestinationImportService(
                 return DestinationImportResult.Failure(summariesResult.Error ?? "Wikipedia sažetak nije dostupan.");
 
             var imageResult = await images.GetImageAsync(data.ImageName, cancellationToken);
-            if (!imageResult.IsSuccess)
-                return DestinationImportResult.Failure(imageResult.Error ?? "Slika nije dostupna.");
 
             var destination = existing ?? new Destination
             {
@@ -58,7 +56,8 @@ public sealed partial class DestinationImportService(
                 Slug = await CreateUniqueSlugAsync(name, data.Region?.NameBs ?? data.Region?.NameEn, normalizedQid, cancellationToken)
             };
 
-            ApplyImportedData(destination, data, summariesResult.Summaries, imageResult.Image, now);
+            ApplyImportedData(destination, data, summariesResult.Summaries,
+                imageResult.IsSuccess ? imageResult.Image : null, now);
 
             if (existing is null)
                 destination = await destinations.AddAsync(destination, cancellationToken);
@@ -83,6 +82,10 @@ public sealed partial class DestinationImportService(
             destination.Type = data.Type;
         if (!IsManual(destination, nameof(Destination.Region)))
             destination.Region = data.Region?.NameBs ?? data.Region?.NameEn ?? string.Empty;
+        if (!IsManual(destination, nameof(Destination.Latitude)))
+            destination.Latitude = data.Latitude;
+        if (!IsManual(destination, nameof(Destination.Longitude)))
+            destination.Longitude = data.Longitude;
         if (!IsManual(destination, nameof(Destination.ElevationM)))
             destination.ElevationM = data.ElevationM;
         if (!IsManual(destination, nameof(Destination.Population)))

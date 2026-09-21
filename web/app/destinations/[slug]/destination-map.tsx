@@ -14,8 +14,11 @@ export default function DestinationMap({ destination, token, language }: { desti
   const markers = useRef(new Map<string, Marker>());
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
+  const latitude = destination.latitude;
+  const longitude = destination.longitude;
+  const hasCoordinates = latitude != null && longitude != null;
   useEffect(() => {
-    if (!token || !container.current) return;
+    if (!token || latitude == null || longitude == null || !container.current) return;
     let disposed = false;
     let map: MapboxMap | undefined;
     const markerSet = markers.current;
@@ -24,7 +27,7 @@ export default function DestinationMap({ destination, token, language }: { desti
       if (disposed || !container.current) return;
       if (!mapboxgl.supported()) { setStatus("error"); return; }
       map = new mapboxgl.Map({ container: container.current, accessToken: token,
-        style: "mapbox://styles/mapbox/outdoors-v12", center: [destination.longitude, destination.latitude],
+        style: "mapbox://styles/mapbox/outdoors-v12", center: [longitude, latitude],
         zoom: 13, cooperativeGestures: true });
       mapRef.current = map;
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
@@ -41,21 +44,21 @@ export default function DestinationMap({ destination, token, language }: { desti
         markerSet.set(id, marker);
         bounds.extend([longitude, latitude]);
       };
-      addMarker(destination.id, destination.name, destination.longitude, destination.latitude, true);
+      addMarker(destination.id, destination.name, longitude, latitude, true);
       destination.places.forEach(place => addMarker(place.id, place.name, place.longitude, place.latitude, false));
       if (destination.places.length) map.fitBounds(bounds, { padding: 65, maxZoom: 14, duration: 0 });
       map.on("load", () => { if (!disposed) { window.clearTimeout(timeout); setStatus("ready"); } });
       map.on("error", () => { if (!disposed) setStatus("error"); });
     }).catch(() => { if (!disposed) setStatus("error"); });
     return () => { disposed = true; window.clearTimeout(timeout); markerSet.clear(); map?.remove(); mapRef.current = null; };
-  }, [destination, token, attempt]);
+  }, [destination, latitude, longitude, token, attempt]);
 
   return <div className={styles.mapGrid}>
     <div>
       <div className={styles.mapWrap}>
         <div ref={container} className={styles.map} role="region" aria-label={language === "en" ? `Map of ${destination.name}` : `Mapa destinacije ${destination.name}`} />
         {(!token || status !== "ready") && <div className={styles.mapStatus} role="status">
-          {!token || status === "error" ? <><p>{labels.mapUnavailable}</p><p>{labels.mapFallback}</p>{token && <button onClick={() => { setStatus("loading"); setAttempt(value => value + 1); }}>{labels.retry}</button>}</> : <p>{labels.mapLoading}</p>}
+          {!hasCoordinates ? <p>{text[language].destinationExtras.mapCoordinatesEmpty}</p> : !token || status === "error" ? <><p>{labels.mapUnavailable}</p><p>{labels.mapFallback}</p>{token && <button onClick={() => { setStatus("loading"); setAttempt(value => value + 1); }}>{labels.retry}</button>}</> : <p>{labels.mapLoading}</p>}
         </div>}
       </div>
       <p className={styles.legend}><span className={styles.legendDestination} /> {labels.mapDestination} <span className={styles.legendPlace} /> {labels.nearby}</p>

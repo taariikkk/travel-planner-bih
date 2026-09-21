@@ -24,6 +24,8 @@ public sealed class DestinationImportServiceTests
         Assert.Equal("grad", destination.Type);
         Assert.Equal("Kanton test", destination.Region);
         Assert.Equal(518, destination.ElevationM);
+        Assert.Equal(43.859, destination.Latitude);
+        Assert.Equal(18.429, destination.Longitude);
         Assert.Equal(275524, destination.Population);
         Assert.Equal("Bosanski dovoljno dug opis", destination.Description);
         Assert.Equal("English sufficient description", destination.DescriptionEn);
@@ -69,12 +71,15 @@ public sealed class DestinationImportServiceTests
         existing.DescriptionLicense = "Ručna licenca";
         existing.DescriptionEnLicense = "Manual license";
         existing.Type = "planina";
+        existing.Latitude = 44.1;
+        existing.Longitude = 17.1;
         existing.Region = "Stara regija";
         existing.ManualOverrideFields =
         [
             nameof(Destination.Description), nameof(Destination.DescriptionSourceUrl),
             nameof(Destination.DescriptionLicense), nameof(Destination.DescriptionEn),
-            nameof(Destination.DescriptionEnSourceUrl), nameof(Destination.DescriptionEnLicense), nameof(Destination.Type)
+            nameof(Destination.DescriptionEnSourceUrl), nameof(Destination.DescriptionEnLicense), nameof(Destination.Type),
+            nameof(Destination.Latitude), nameof(Destination.Longitude)
         ];
         var repository = new ImportRepository([existing]);
         var service = CreateService(repository, Data());
@@ -88,6 +93,8 @@ public sealed class DestinationImportServiceTests
         Assert.Equal("Ručna licenca", existing.DescriptionLicense);
         Assert.Equal("Manual license", existing.DescriptionEnLicense);
         Assert.Equal("planina", existing.Type);
+        Assert.Equal(44.1, existing.Latitude);
+        Assert.Equal(17.1, existing.Longitude);
         Assert.Equal("Kanton test", existing.Region);
         Assert.Equal("manual", existing.Source);
     }
@@ -105,6 +112,37 @@ public sealed class DestinationImportServiceTests
 
         Assert.Equal("postojeci", result.Slug);
         Assert.Equal(0, wikidata.CallCount);
+    }
+
+    [Fact]
+    public async Task Import_at_the_TTL_boundary_refreshes_provider_data()
+    {
+        var existing = ExistingDestination("Q556", "istekao");
+        existing.ImportedAt = Now.AddHours(-24);
+        var repository = new ImportRepository([existing]);
+        var wikidata = new DestinationProvider(Data());
+        var service = CreateService(repository, wikidata: wikidata);
+
+        await service.ImportAsync("Q556", default);
+
+        Assert.Equal(1, wikidata.CallCount);
+    }
+
+    [Fact]
+    public async Task Import_succeeds_without_an_image_and_keeps_the_destination_usable()
+    {
+        var repository = new ImportRepository();
+        var service = new DestinationImportService(
+            new DestinationProvider(Data()), new SummaryProvider(true), new UnavailableImageProvider(), repository,
+            new DestinationImportOptions { TtlHours = 24, DefaultBudgetTier = "standard", DefaultSuggestedStayMinDays = 1, DefaultSuggestedStayMaxDays = 3 },
+            new FixedTimeProvider(Now));
+
+        var result = await service.ImportAsync("Q888", default);
+
+        Assert.True(result.IsSuccess);
+        var destination = Assert.Single(repository.Items);
+        Assert.Null(destination.ImageUrl);
+        Assert.True(destination.IsRecommendationEligible);
     }
 
     [Fact]
@@ -194,6 +232,12 @@ public sealed class DestinationImportServiceTests
         public Task<DestinationImageResult> GetImageAsync(string? imageName, CancellationToken cancellationToken) =>
             Task.FromResult(DestinationImageResult.Success(new DestinationImage(
                 "https://images.test/test.jpg", "Autor", "CC BY-SA 4.0", "https://commons.test/Test")));
+    }
+
+    private sealed class UnavailableImageProvider : IImageProvider
+    {
+        public Task<DestinationImageResult> GetImageAsync(string? imageName, CancellationToken cancellationToken) =>
+            Task.FromResult(DestinationImageResult.Failure("Image unavailable"));
     }
 
     private sealed class ImportRepository(IEnumerable<Destination>? seed = null) : IDestinationImportRepository

@@ -18,6 +18,8 @@ public sealed class Destination
     public string? DescriptionEnSourceUrl { get; set; }
     public string? DescriptionEnLicense { get; set; }
     public string BestTimeToVisit { get; set; } = string.Empty;
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public double? ElevationM { get; set; }
     public int? Population { get; set; }
     public string? ImageUrl { get; set; }

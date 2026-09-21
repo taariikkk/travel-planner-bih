@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getNavigationItems, isProtectedPath, type NavigationKey } from "../lib/navigation";
 import { text } from "../lib/i18n";
 import { useAuth } from "./auth-provider";
 import { LanguageSwitcher } from "./language-switcher";
 import { useLanguage } from "./language-provider";
+import { shouldRenderNeutralShell } from "./app-shell-state";
 import styles from "./app-shell.module.css";
 
 function Logo() {
@@ -34,6 +35,8 @@ function isActive(pathname: string, href: string) {
   return pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 }
 
+const subscribeToHydration = () => () => {};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -41,6 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const labels = text[language].navigation;
   const { status, user, signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const protectedPage = isProtectedPath(pathname);
@@ -66,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (restoreFocus) menuButtonRef.current?.focus();
   }
 
-  if (status === "checking" || (status === "guest" && protectedPage)) {
+  if (shouldRenderNeutralShell(hydrated, status, protectedPage)) {
     return <div className={styles.neutral}><Link href="/" className={styles.neutralBrand}><Logo /></Link><p role="status">{labels.loading}</p></div>;
   }
 

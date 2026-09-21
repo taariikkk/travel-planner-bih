@@ -7,53 +7,53 @@ namespace TravelPlanner.Infrastructure.Repositories;
 
 public sealed class DestinationDetailsRepository(ApplicationDbContext context) : IDestinationDetailsRepository
 {
-    // MVP assumption: stable URLs and approximate map centers for the existing curated dataset.
-    // Destination currently has neither a slug nor a coordinate column; do not derive centers from nearby places.
-    private static readonly Dictionary<string, (string Name, double Lat, double Lng)> Catalog = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["sarajevo"] = ("Sarajevo", 43.859, 18.429),
-        ["mostar"] = ("Mostar", 43.3373, 17.8150),
-        ["trebinje"] = ("Trebinje", 42.711, 18.344),
-        ["neum"] = ("Neum", 42.923, 17.616),
-        ["jahorina"] = ("Jahorina", 43.735, 18.569),
-        ["bjelasnica"] = ("Bjelašnica", 43.715, 18.288),
-        ["banja-luka"] = ("Banja Luka", 44.772, 17.191),
-        ["travnik"] = ("Travnik", 44.227, 17.665),
-        ["pocitelj"] = ("Počitelj", 43.134, 17.732),
-        ["visegrad"] = ("Višegrad", 43.782, 19.293),
-        ["jajce"] = ("Jajce", 44.338, 17.270)
-    };
-
     public async Task<DestinationDetailsResponse?> GetBySlugAsync(string slug, string language, CancellationToken cancellationToken)
     {
-        if (!Catalog.TryGetValue(slug, out var entry)) return null;
         var destination = await context.Destinations.AsNoTracking()
             .Include(item => item.Translations)
-            .SingleOrDefaultAsync(item => item.Name == entry.Name, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Slug == slug, cancellationToken);
         if (destination is null) return null;
         var translation = destination.Translations.FirstOrDefault(item => item.LanguageCode == language);
-        // Assumption: nearby means places belonging to this destination, ordered from its existing map center.
-        // Cast geometry to geography: ST_Distance then returns geodesic meters, not degrees.
-        var nearest = await context.Places.FromSqlInterpolated($"""
-            SELECT * FROM "Place"
-            WHERE "DestinationId" = {destination.Id}
-              AND NOT ST_IsEmpty("Location")
-              AND ST_X("Location") BETWEEN -180 AND 180
-              AND ST_Y("Location") BETWEEN -90 AND 90
-            ORDER BY ST_Distance("Location"::geography,
-                ST_SetSRID(ST_MakePoint({entry.Lng}, {entry.Lat}), 4326)::geography), "Name", "Id"
-            LIMIT 6
-            """).AsNoTracking().ToArrayAsync(cancellationToken);
-        var places = nearest.Select(place => new PlaceResponse(
+        var nearest = destination is { Latitude: not null, Longitude: not null }
+            ? await context.Places.FromSqlInterpolated($"""
+                SELECT * FROM "Place"
+                WHERE "DestinationId" = {destination.Id}
+                  AND NOT ST_IsEmpty("Location")
+                  AND ST_X("Location") BETWEEN -180 AND 180
+                  AND ST_Y("Location") BETWEEN -90 AND 90
+                ORDER BY ST_Distance("Location"::geography,
+                    ST_SetSRID(ST_MakePoint({destination.Longitude.Value}, {destination.Latitude.Value}), 4326)::geography), "Name", "Id"
+                LIMIT 6
+                """).AsNoTracking().ToArrayAsync(cancellationToken)
+            : await context.Places.Where(place => place.DestinationId == destination.Id).AsNoTracking().OrderBy(place => place.Name).ThenBy(place => place.Id).Take(6).ToArrayAsync(cancellationToken);
+        var placeResponses = nearest.Select(place => new PlaceResponse(
             place.Id, place.Name, place.Category, place.Location.Y, place.Location.X)).ToArray();
-        var sarajevo = Catalog["sarajevo"];
-        var distance = await context.Database.SqlQuery<double>(
-            DestinationDistance.QueryKm(entry.Lat, entry.Lng, sarajevo.Lat, sarajevo.Lng))
-            .SingleAsync(cancellationToken);
-        return new(destination.Id, slug.ToLowerInvariant(), destination.Name, destination.Region,
-            translation?.Description ?? (language == "en" ? destination.DescriptionEn : null) ?? destination.Description,
+        var sarajevo = await context.Destinations.AsNoTracking().SingleOrDefaultAsync(item => item.Slug == "sarajevo", cancellationToken);
+        var distance = destination.Slug != "sarajevo" && destination.Latitude is not null && destination.Longitude is not null
+            && sarajevo is { Latitude: not null, Longitude: not null }
+            ? await context.Database.SqlQuery<double>(DestinationDistance.QueryKm(destination.Latitude.Value, destination.Longitude.Value, sarajevo.Latitude.Value, sarajevo.Longitude.Value)).SingleAsync(cancellationToken)
+            : (double?)null;
+        var usingEnglishImport = language == "en" && translation is null && !string.IsNullOrWhiteSpace(destination.DescriptionEn);
+        var description = translation?.Description ?? (usingEnglishImport ? destination.DescriptionEn! : destination.Description);
+        var attribution = destination.Source.Equals("wikidata", StringComparison.OrdinalIgnoreCase) && translation is null
+            ? usingEnglishImport
+                ? CreateTextAttribution(destination.DescriptionEnLicense, destination.DescriptionEnSourceUrl)
+                : CreateTextAttribution(destination.DescriptionLicense, destination.DescriptionSourceUrl)
+            : null;
+        var imageAttribution = destination.ImageUrl is not null
+            && !string.IsNullOrWhiteSpace(destination.ImageAuthor)
+            && !string.IsNullOrWhiteSpace(destination.ImageLicense)
+            && !string.IsNullOrWhiteSpace(destination.ImageSourceUrl)
+                ? new ImageAttributionResponse(destination.ImageAuthor, destination.ImageLicense, destination.ImageSourceUrl)
+                : null;
+        return new(destination.Id, destination.Slug, destination.Name, destination.Region,
+            description,
             translation?.BestTimeToVisit ?? destination.BestTimeToVisit,
             destination.SuggestedStayMinDays, destination.SuggestedStayMaxDays, destination.Tags,
-            entry.Lat, entry.Lng, places, slug.Equals("sarajevo", StringComparison.OrdinalIgnoreCase) ? null : distance);
+            destination.Latitude, destination.Longitude, placeResponses, distance, destination.ElevationM,
+            null, destination.Population, destination.ImageUrl, imageAttribution, attribution);
     }
+
+    private static TextAttributionResponse? CreateTextAttribution(string? license, string? url) =>
+        !string.IsNullOrWhiteSpace(license) && !string.IsNullOrWhiteSpace(url) ? new(license, url) : null;
 }

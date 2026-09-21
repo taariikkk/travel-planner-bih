@@ -28,6 +28,8 @@
 .detailSection > span, .mapHeading span, .utilitySection > div > span { color: var(--accent); font-size: 10px; font-weight: 600; letter-spacing: .9px; }
 .detailSection h2, .mapHeading h2, .utilitySection h2 { margin: 0; font: 400 clamp(28px, 2.8vw, 40px)/1.15 Georgia, "Times New Roman", serif; letter-spacing: -.8px; }
 .detailSection p, .utilitySection p { margin: 14px 0 0; color: var(--muted); font-size: 14px; line-height: 1.85; }
+.attribution { font-size: 12px !important; }
+.attribution a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .quickFacts { margin: 22px 0 0; border-top: 1px solid var(--rule); }
 .quickFacts > div { display: grid; grid-template-columns: minmax(120px, .75fr) minmax(0, 1.25fr); gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--rule); }
 .quickFacts dd { margin-top: 0; font-size: 13px; }

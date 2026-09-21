@@ -32,6 +32,9 @@ public sealed class DestinationEndpointsTests
         Assert.Equal(17.815, body.Longitude);
         Assert.Equal(2, body.SuggestedStayMinDays);
         Assert.Equal("restaurant", Assert.Single(body.Places).Category);
+        Assert.Equal(518, body.ElevationMeters);
+        Assert.Equal("Test author", body.ImageAttribution!.Author);
+        Assert.Equal("CC BY-SA", body.DescriptionAttribution!.License);
     }
 
     [Theory]
@@ -167,7 +170,10 @@ public sealed class DestinationEndpointsTests
                 ? new(Guid.NewGuid(), slug, slug == "mostar" ? "Mostar" : "Trebinje", "Hercegovina",
                     language == "en" ? "English description" : "Opis", "maj-septembar", 2, 3,
                     ["historija"], 43.3373, 17.815,
-                    slug == "mostar" ? [new(Guid.NewGuid(), "Test restoran", "restaurant", 43.338, 17.816)] : [])
+                    slug == "mostar" ? [new(Guid.NewGuid(), "Test restoran", "restaurant", 43.338, 17.816)] : [],
+                    ElevationMeters: 518, ImageUrl: "https://images.test/test.jpg",
+                    ImageAttribution: new("Test author", "CC BY-SA 4.0", "https://commons.test/Test"),
+                    DescriptionAttribution: new("CC BY-SA", "https://wikipedia.test/Test"))
                 : null;
             return Task.FromResult(result);
         }

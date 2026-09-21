@@ -62,6 +62,8 @@ internal static class DestinationSeedData
             },
             Type = GetType(name),
             Source = "manual",
+            Latitude = GetCoordinates(name).Latitude,
+            Longitude = GetCoordinates(name).Longitude,
             Region = name == "Bjelašnica" ? "Sarajevski kanton" : region,
             Description = description,
             DescriptionLanguage = "bs",
@@ -80,6 +82,22 @@ internal static class DestinationSeedData
         "Jahorina" or "Bjelašnica" => "planina",
         "Neum" => "ostalo",
         _ => "grad"
+    };
+
+    private static (double Latitude, double Longitude) GetCoordinates(string destinationName) => destinationName switch
+    {
+        "Sarajevo" => (43.859, 18.429),
+        "Mostar" => (43.3373, 17.8150),
+        "Trebinje" => (42.711, 18.344),
+        "Neum" => (42.923, 17.616),
+        "Jahorina" => (43.735, 18.569),
+        "Bjelašnica" => (43.715, 18.288),
+        "Banja Luka" => (44.772, 17.191),
+        "Travnik" => (44.227, 17.665),
+        "Počitelj" => (43.134, 17.732),
+        "Višegrad" => (43.782, 19.293),
+        "Jajce" => (44.338, 17.270),
+        _ => throw new InvalidOperationException($"Coordinates for '{destinationName}' are missing.")
     };
 
     private static DestinationMetadata GetMetadata(string destinationName) => destinationName switch

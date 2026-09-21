@@ -62,6 +62,8 @@ public sealed class ApplicationDbContextModelTests
         Assert.Equal("text[]", destination.FindProperty(nameof(Destination.ManualOverrideFields))!.GetColumnType());
         Assert.True(destination.FindProperty(nameof(Destination.ExternalId))!.IsNullable);
         Assert.True(destination.FindProperty(nameof(Destination.Population))!.IsNullable);
+        Assert.True(destination.FindProperty(nameof(Destination.Latitude))!.IsNullable);
+        Assert.True(destination.FindProperty(nameof(Destination.Longitude))!.IsNullable);
         Assert.Equal(16, destination.FindProperty(nameof(Destination.BudgetTier))!.GetMaxLength());
         Assert.Equal(180, destination.FindProperty(nameof(Destination.Slug))!.GetMaxLength());
         Assert.False(destination.FindProperty(nameof(Destination.Slug))!.IsNullable);
