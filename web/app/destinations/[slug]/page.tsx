@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, getErrorMessage } from "../../lib/api";
 import { formatTag, getLanguage, LANGUAGE_COOKIE, text } from "../../lib/i18n";
 import DestinationMap from "./destination-map";
 import DestinationFavoriteButton from "./destination-favorite-button";
@@ -17,7 +17,10 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
   const extra = text[language].destinationExtras;
   const response = await apiFetch(`/api/destinations/${encodeURIComponent(slug)}?language=${language}`, { cache: "no-store" });
   if (response.status === 404) notFound();
-  if (!response.ok) throw new Error("Destination request failed");
+  if (!response.ok) {
+    const message = await getErrorMessage(response, "Destination request failed");
+    throw new Error(`${message} (HTTP ${response.status})`);
+  }
   const destination: Destination = await response.json();
   // Mapbox GL runs in the browser and requires a public pk.* token. Never serialize a secret sk.* token.
   const token = process.env.MAPBOX_ACCESS_TOKEN?.trim();

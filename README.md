@@ -176,6 +176,19 @@ npm run dev
 Backend koristi `http://localhost:5138` (Swagger: `/swagger`), a frontend
 `NEXT_PUBLIC_API_URL=http://localhost:5138`.
 
+Ako backend pri pokretanju prijavi `Failed to connect to 127.0.0.1:55432`,
+PostGIS kontejner nije pokrenut. Iz korijena repozitorija pokreni
+`docker compose up -d`, sačekaj da `docker compose ps` prikaže servis `db` kao
+`Up`, zatim u `api/` ponovo izvrši:
+
+```bash
+dotnet ef database update --project TravelPlanner.Infrastructure --startup-project TravelPlanner.WebAPI -- --environment Development
+```
+
+Ako `dotnet watch` čeka promjenu nakon prethodnog pada, pritisni `Ctrl+R` ili ga
+ponovo pokreni. Nova funkcionalnost koja ima EF migraciju može vratiti HTTP 500
+dok ta migracija nije primijenjena.
+
 Ako pokretanje prijavi `address already in use` za port `5138`, provjeri
 `ss -ltnp '( sport = :5138 )'`. Zaustavi prethodnu instancu API-ja sa `Ctrl+C`
 u njenom terminalu prije ponovnog pokretanja. Ako terminal više nije dostupan,
