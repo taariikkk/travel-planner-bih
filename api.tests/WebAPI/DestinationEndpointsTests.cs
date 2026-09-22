@@ -189,8 +189,19 @@ public sealed class DestinationEndpointsTests
         return body.RootElement.GetProperty("accessToken").GetString()!;
     }
 
+    [Fact]
+    public async Task Both_places_read_endpoints_refresh_before_reading()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        await client.GetAsync("/api/destinations/mostar");
+        await client.GetAsync("/api/destinations/sarajevo/map-places");
+        Assert.Equal(new[] { "mostar", "sarajevo" }, factory.Places.Calls);
+    }
+
     private sealed class ApiFactory(int importPermitLimit = 5, int searchPermitLimit = 20) : WebApplicationFactory<Program>
     {
+        public PlacesImporter Places { get; } = new();
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
@@ -207,6 +218,8 @@ public sealed class DestinationEndpointsTests
             }));
             builder.ConfigureTestServices(services =>
             {
+                services.RemoveAll<IPlacesImportService>();
+                services.AddSingleton<IPlacesImportService>(Places);
                 services.RemoveAll<IUserRepository>();
                 services.RemoveAll<IDestinationRepository>();
                 services.AddSingleton<Users>();
@@ -222,6 +235,12 @@ public sealed class DestinationEndpointsTests
                 services.AddSingleton<IDestinationSearchService>(new Search());
             });
         }
+    }
+
+    private sealed class PlacesImporter : IPlacesImportService
+    {
+        public List<string> Calls { get; } = [];
+        public Task RefreshAsync(string slug, CancellationToken cancellationToken) { Calls.Add(slug); return Task.CompletedTask; }
     }
 
     private sealed class Importer : IDestinationImportService

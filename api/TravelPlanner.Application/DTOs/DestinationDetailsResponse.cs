@@ -11,4 +11,4 @@ public sealed record ImageAttributionResponse(string Author, string License, str
 public sealed record TextAttributionResponse(string License, string Url);
 
 public sealed record PlaceResponse(Guid Id, string Name, string Category, double Latitude, double Longitude,
-    string? ImageUrl = null);
+    string? ImageUrl = null, ImageAttributionResponse? ImageAttribution = null, PlaceMetadataResponse? Metadata = null);

@@ -15,14 +15,15 @@ public sealed class DestinationMapRepositoryTests
         await using var context = CreateContext();
         await using var transaction = await context.Database.BeginTransactionAsync();
         await context.Database.ExecuteSqlRawAsync("""
-            CREATE TEMP TABLE "Place" (LIKE public."Place" INCLUDING ALL) ON COMMIT DROP
+            CREATE TEMP TABLE "Place" (LIKE public."Place" INCLUDING ALL) ON COMMIT DROP;
+            CREATE TEMP TABLE "DestinationPlace" (LIKE public."DestinationPlace" INCLUDING ALL) ON COMMIT DROP
             """);
         var destination = await context.Destinations.FirstAsync();
         var prefix = $"Map cluster test {Guid.NewGuid():N}";
         var places = Enumerable.Range(0, 80).Select(index => new Place
         {
             Id = Guid.NewGuid(),
-            DestinationId = destination.Id,
+            DestinationLinks = [new() { DestinationId = destination.Id, IsManual = true }],
             Name = $"{prefix} {index:00}",
             Category = index % 2 == 0 ? "attraction" : "restaurant",
             Source = "manual",
@@ -45,7 +46,8 @@ public sealed class DestinationMapRepositoryTests
         await using var context = CreateContext();
         await using var transaction = await context.Database.BeginTransactionAsync();
         await context.Database.ExecuteSqlRawAsync("""
-            CREATE TEMP TABLE "Place" (LIKE public."Place" INCLUDING ALL) ON COMMIT DROP
+            CREATE TEMP TABLE "Place" (LIKE public."Place" INCLUDING ALL) ON COMMIT DROP;
+            CREATE TEMP TABLE "DestinationPlace" (LIKE public."DestinationPlace" INCLUDING ALL) ON COMMIT DROP
             """);
         var destination = await context.Destinations.FirstAsync();
         var repository = new DestinationMapRepository(context);

@@ -69,6 +69,29 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(mapboxOptions.TimeoutSeconds);
         });
 
+        var placesOptions = configuration.GetSection("PlacesImport").Get<PlacesImportOptions>() ?? new();
+        var overpassOptions = configuration.GetSection("Overpass").Get<OverpassOptions>() ?? new();
+        if (placesOptions.RadiusMeters is <= 0 or > 50_000 || placesOptions.TtlHours <= 0 || placesOptions.FailureCooldownMinutes < 15
+            || overpassOptions.QueryTimeoutSeconds <= 0 || overpassOptions.HttpTimeoutSeconds <= overpassOptions.QueryTimeoutSeconds
+            || overpassOptions.HttpTimeoutSeconds > 45 || overpassOptions.MinImportIntervalSeconds < 30 || overpassOptions.DailyAttemptLimit <= 0
+            || string.IsNullOrWhiteSpace(overpassOptions.UserAgent)
+            || OverpassPlacesProvider.SafeUrl(overpassOptions.PrimaryUrl) is null
+            || (overpassOptions.MirrorUrl is not null && OverpassPlacesProvider.SafeUrl(overpassOptions.MirrorUrl) is null))
+            throw new InvalidOperationException("Places/Overpass configuration is invalid.");
+        services.AddSingleton(placesOptions);
+        services.AddSingleton(overpassOptions);
+        services.AddScoped<IPlacesImportService, PlacesImportService>();
+        services.AddScoped<IPlacesImportRepository, PlacesImportRepository>();
+        services.AddScoped<IPlacesProvider, OverpassPlacesProvider>();
+        services.AddScoped<IOverpassRequestGate, OverpassRequestGate>();
+        services.AddScoped<ManualPlacesSeeder>();
+        services.AddHttpClient(OverpassPlacesProvider.ClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(overpassOptions.HttpTimeoutSeconds);
+            client.MaxResponseContentBufferSize = 5 * 1024 * 1024;
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(overpassOptions.UserAgent);
+        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? throw new InvalidOperationException("JWT configuration was not found.");
         if (string.IsNullOrWhiteSpace(jwtOptions.Key) || string.IsNullOrWhiteSpace(jwtOptions.Issuer) || string.IsNullOrWhiteSpace(jwtOptions.Audience))

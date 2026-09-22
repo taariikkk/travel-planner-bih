@@ -17,7 +17,7 @@ public sealed class DestinationMapRepository(ApplicationDbContext context) : IDe
 
         var places = await context.Places.FromSqlInterpolated($"""
             SELECT * FROM "Place"
-            WHERE "DestinationId" = {destinationId.Value}
+            WHERE "Id" IN (SELECT "PlaceId" FROM "DestinationPlace" WHERE "DestinationId" = {destinationId.Value})
               AND NOT ST_IsEmpty("Location")
               AND ST_X("Location") BETWEEN -180 AND 180
               AND ST_Y("Location") BETWEEN -90 AND 90
@@ -25,6 +25,8 @@ public sealed class DestinationMapRepository(ApplicationDbContext context) : IDe
             """).AsNoTracking().ToArrayAsync(cancellationToken);
 
         return places.Select(place => new DestinationMapPlaceResponse(
-            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X)).ToArray();
+            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X,
+            PlaceMetadataResponse.From(place), PlaceMetadataResponse.ImageAttribution(place) is null ? null : place.ImageUrl,
+            PlaceMetadataResponse.ImageAttribution(place))).ToArray();
     }
 }

@@ -5,4 +5,5 @@ public sealed record DestinationMapPlaceResponse(
     string Name,
     string Category,
     double Latitude,
-    double Longitude);
+    double Longitude,
+    PlaceMetadataResponse? Metadata = null, string? ImageUrl = null, ImageAttributionResponse? ImageAttribution = null);

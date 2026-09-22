@@ -68,7 +68,7 @@ public sealed class SavedPlaceRepositoryTests
         var destinationId = await context.Destinations.Select(destination => destination.Id).FirstAsync();
         var place = new Place
         {
-            Id = Guid.NewGuid(), DestinationId = destinationId, Name = "Saved place constraint test", Category = "attraction",
+            Id = Guid.NewGuid(), DestinationLinks = [new() { DestinationId = destinationId, IsManual = true }], Name = "Saved place constraint test", Category = "attraction",
             Source = "manual", Location = new NetTopologySuite.Geometries.Point(18.429, 43.859) { SRID = 4326 }
         };
         context.Places.Add(place);

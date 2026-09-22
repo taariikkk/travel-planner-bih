@@ -271,6 +271,110 @@ vanjskog provajdera ne uklanja već pronađene lokalne rezultate. `/explore` kor
 server-renderovane URL parametre, filtere po tipu i regiji i ne uvodi client-side
 biblioteku za dohvat podataka.
 
+## OpenStreetMap / Overpass mjesta
+
+Detalji destinacije i `GET /api/destinations/{slug}/map-places` na zahtjev
+osvježavaju restorane i atrakcije u radijusu 10 km, ograničeno na BiH.
+Overpass puni bazu; Mapbox prikazuje podatke i njegovi geocoding rezultati se ne
+pohranjuju. Oba GET endpointa zadržavaju postojeći oblik odgovora; svako mjesto
+ima opcioni `metadata` objekat (opisi, adresa, kuhinja, kontakt, porijeklo i datumi),
+`imageUrl` i `imageAttribution`. Nepoznata destinacija vraća 404. Destinacija bez
+koordinata koristi samo postojeća mjesta. Opisi imaju `descriptionBs`,
+`descriptionEn` i izvorni `description`/`descriptionLanguage`; neoznačen OSM opis
+ima jezik `und`. Cijene se ne procjenjuju iz OSM tagova.
+
+Identitet OSM mjesta je `node/123`, `way/123` ili `relation/123`, globalno
+jedinstven bez obzira na `Source`. Spojna tabela `DestinationPlace` omogućava
+prikaz istog mjesta za više destinacija. Uspješno osvježavanje uklanja samo
+zastarjele uvezene veze za tu destinaciju, nikada samo mjesto ili ručne veze.
+Time ostaju važeće reference omiljenih mjesta i itinerera. Ne pokušavamo spajati
+različite OSM identifikatore na osnovu sličnog naziva ili blizine.
+
+`PlacesImport` konfiguracija: `RadiusMeters=10000` (najviše 50000), `TtlHours=168`,
+`FailureCooldownMinutes=15`. Kešira se i uspješan prazan odgovor. Potpis upita
+uključuje koordinate, radijus i verziju kategorija. Zakup u bazi traje dvije
+minute; zastarjeli vlasnik zakupa ne može upisati rezultate.
+
+`Overpass` konfiguracija: `PrimaryUrl=https://overpass-api.de/api/interpreter`,
+`MirrorUrl=https://overpass.private.coffee/api/interpreter` (null isključuje
+fallback), `UserAgent`, `QueryTimeoutSeconds=10`, `HttpTimeoutSeconds=12`,
+`MinImportIntervalSeconds=30`, `DailyAttemptLimit=90`. HTTP timeout mora biti
+veći od query timeouta i najviše 45 sekundi. Zajednički limit u bazi važi za sve
+API instance: jedan aktivan izlazni poziv, najmanje 30 sekundi između novih
+uvoza, do 90 pokušaja po UTC danu. Fallback se računa kao dodatni pokušaj.
+Odgovor je ograničen na 5 MB. Nema background servisa; sljedeći zahtjev nakon
+isteka keša pokušava osvježavanje.
+
+Timeout, mrežna greška ili 5xx dozvoljavaju jedan mirror pokušaj. HTTP 429/406
+poštuje `Retry-After` (najmanje 30 sekundi) bez neposrednog mirrora. Neispravan
+JSON i Overpass `remark` odbacuju cijeli odgovor. Greška zadržava stari keš i
+odgađa uvoz najmanje 15 minuta; nedostupan globalni budžet samo odgađa pokušaj
+do sljedećeg dozvoljenog termina. Prvi dohvat može trajati do dva HTTP timeouta;
+pri nedostupnosti servera početna lista može ostati prazna. Strukturisani logovi
+bilježe server, trajanje, broj rezultata/preskočenih elemenata i keš stanje.
+
+### Ručna mjesta
+
+`api/TravelPlanner.WebAPI/SeedData/manual-places.json` počinje kao prazan niz.
+Seeder se izvršava pri pokretanju, nakon seedera Wikidata identifikatora. Prije
+pokretanja API-ja primijeniti migracije. Fajl se kopira u build/publish izlaz.
+Neispravan dokument prekida pokretanje jasnom greškom i bez djelimičnih upisa.
+Primjer je isključivo ilustracija formata, nije kurirani sadržaj:
+
+```json
+[
+  {
+    "key": "primjer-rucnog-mjesta",
+    "destinations": ["mostar"],
+    "externalId": "node/123",
+    "fields": {
+      "name": "Primjer naziva",
+      "category": "restaurant",
+      "location": { "latitude": 43.3373, "longitude": 17.815 },
+      "descriptionBs": "Vlastiti opis na bosanskom.",
+      "descriptionEn": "Original description in English.",
+      "priceLevel": "standard",
+      "website": null
+    }
+  }
+]
+```
+
+`key` je stabilan i jedinstven; `destinations` sadrži postojeće slugove.
+`externalId` je opcion i mora odgovarati stvarnom OSM objektu ako se koristi.
+Za novo mjesto obavezni su `name`, `category` (`restaurant` ili `attraction`) i
+`location`. Za dopunu već uvezenog mjesta dovoljna su polja koja mijenjaš.
+Ostala dozvoljena polja su `description`, `descriptionLanguage`, `address`,
+`cuisine`, `phone`, `email`, `imageUrl`, `imageAuthor`, `imageLicense` i
+`imageSourceUrl`. Cjenovni nivo je `budget`, `standard`, `premium` ili null.
+Slika zahtijeva sva četiri polja za URL i atribuciju; za uklanjanje postaviti
+sva četiri na null. URL-ovi moraju biti HTTP(S), bez korisničkih podataka.
+
+Navedena polja postaju `ManualOverrideFields`; eksplicitni null briše i štiti
+opcionu vrijednost. Izostavljena polja i zapisi se ne brišu. Ručni zapis dobija
+`Source=manual`, a OSM ID i URL ostaju sačuvani. Seeder i uvoz dijele zaključavanje
+kratkih upisnih transakcija. Konflikt ručnog ključa i OSM identiteta odbija se;
+postojeća različita mjesta se ne spajaju automatski uz gubitak referenci.
+
+Migracija čuva stare ID-jeve i veze; postojećim ručnim mjestima štiti naziv,
+kategoriju i lokaciju. Povratak migracije odbija se ako mjesto ima više veza ili
+nema vezu, jer stari model takvo stanje ne može predstaviti bez gubitka podataka.
+
+### Provjera
+
+`dotnet test api.tests/TravelPlanner.Api.Tests.csproj` koristi fiksne HTTP
+odgovore, bez poziva javnom Overpass serveru. Za sve PostGIS testove postaviti
+`TEST_POSTGIS_CONNECTION` na zasebnu bazu s primijenjenim migracijama. Novi
+integracijski testovi rade u vlastitim privremenim shemama koje uklanjaju nakon
+provjere. Frontend provjere: `npm run lint`, `npx tsc --noEmit`, `npm test`,
+`npm run build` iz `web/` direktorija. Browser provjere nisu korištene.
+
+Za ručni živi smoke test pokrenuti API nad testnom bazom, otvoriti detalje jedne
+destinacije preko HTTP klijenta i provjeriti `Place`, `DestinationPlace` i
+`PlacesImportState`. Ponoviti detalje i `map-places`: `SucceededAt`, ID-jevi i
+broj `OverpassRequestState.Attempts` moraju ostati isti. Ne pokretati masovni
+uvoz tokom ove provjere.
+
 ## Monetizacija (buduća faza)
 
 - Freemium model prilagođen BiH kupovnoj moći (5-10 KM/mjesečno Premium)

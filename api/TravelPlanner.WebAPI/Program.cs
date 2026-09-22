@@ -79,6 +79,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     await scope.ServiceProvider.GetRequiredService<SeedWikidataIdsSeeder>()
         .SeedAsync(CancellationToken.None);
+    await scope.ServiceProvider.GetRequiredService<ManualPlacesSeeder>().SeedAsync(CancellationToken.None);
 }
 
 // Configure the HTTP request pipeline.

@@ -15,7 +15,8 @@ public sealed class DestinationDistanceTests
         await using var transaction = await context.Database.BeginTransactionAsync();
         // A transaction-local shadow table keeps all real Place records untouched.
         await context.Database.ExecuteSqlRawAsync("""
-            CREATE TEMP TABLE "Place" (LIKE public."Place" INCLUDING ALL) ON COMMIT DROP
+            CREATE TEMP TABLE "Place" (LIKE public."Place" INCLUDING ALL) ON COMMIT DROP;
+            CREATE TEMP TABLE "DestinationPlace" (LIKE public."DestinationPlace" INCLUDING ALL) ON COMMIT DROP
             """);
         var repository = new DestinationDetailsRepository(context);
         var empty = await repository.GetBySlugAsync("mostar", "bs", default);
@@ -24,7 +25,7 @@ public sealed class DestinationDistanceTests
         for (var index = 8; index >= 1; index--)
             context.Places.Add(new TravelPlanner.Api.Domain.Entities.Place
             {
-                Id = Guid.NewGuid(), DestinationId = empty.Id, Name = $"Place {index}",
+                Id = Guid.NewGuid(), DestinationLinks = [new() { DestinationId = empty.Id, IsManual = true }], Name = $"Place {index}",
                 Category = "attraction", Source = "manual",
                 Location = new NetTopologySuite.Geometries.Point(17.815 + index * .001, 43.3373) { SRID = 4326 }
             });

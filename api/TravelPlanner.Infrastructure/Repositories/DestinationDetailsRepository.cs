@@ -17,7 +17,7 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
         var nearest = destination is { Latitude: not null, Longitude: not null }
             ? await context.Places.FromSqlInterpolated($"""
                 SELECT * FROM "Place"
-                WHERE "DestinationId" = {destination.Id}
+                WHERE "Id" IN (SELECT "PlaceId" FROM "DestinationPlace" WHERE "DestinationId" = {destination.Id})
                   AND NOT ST_IsEmpty("Location")
                   AND ST_X("Location") BETWEEN -180 AND 180
                   AND ST_Y("Location") BETWEEN -90 AND 90
@@ -25,9 +25,11 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
                     ST_SetSRID(ST_MakePoint({destination.Longitude.Value}, {destination.Latitude.Value}), 4326)::geography), "Name", "Id"
                 LIMIT 6
                 """).AsNoTracking().ToArrayAsync(cancellationToken)
-            : await context.Places.Where(place => place.DestinationId == destination.Id).AsNoTracking().OrderBy(place => place.Name).ThenBy(place => place.Id).Take(6).ToArrayAsync(cancellationToken);
+            : await context.Places.Where(place => place.DestinationLinks.Any(link => link.DestinationId == destination.Id)).AsNoTracking().OrderBy(place => place.Name).ThenBy(place => place.Id).Take(6).ToArrayAsync(cancellationToken);
         var placeResponses = nearest.Select(place => new PlaceResponse(
-            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X)).ToArray();
+            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X,
+            PlaceMetadataResponse.ImageAttribution(place) is null ? null : place.ImageUrl,
+            PlaceMetadataResponse.ImageAttribution(place), PlaceMetadataResponse.From(place))).ToArray();
         var sarajevo = await context.Destinations.AsNoTracking().SingleOrDefaultAsync(item => item.Slug == "sarajevo", cancellationToken);
         var distance = destination.Slug != "sarajevo" && destination.Latitude is not null && destination.Longitude is not null
             && sarajevo is { Latitude: not null, Longitude: not null }

@@ -12,6 +12,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
   <ItemGroup>
+    <Content Update="SeedData/manual-places.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Update="SeedData/seed-wikidata-ids.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

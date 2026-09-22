@@ -10,6 +10,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<User> Users => Set<User>();
     public DbSet<Destination> Destinations => Set<Destination>();
     public DbSet<DestinationTranslation> DestinationTranslations => Set<DestinationTranslation>();
+    public DbSet<DestinationPlace> DestinationPlaces => Set<DestinationPlace>();
+    public DbSet<PlacesImportState> PlacesImportStates => Set<PlacesImportState>();
+    public DbSet<OverpassRequestState> OverpassRequestStates => Set<OverpassRequestState>();
     public DbSet<Place> Places => Set<Place>();
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<TripDay> TripDays => Set<TripDay>();
@@ -79,8 +82,32 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(place => place.Category).IsRequired();
             entity.Property(place => place.Location).HasColumnType("geometry (point,4326)");
             entity.Property(place => place.Source).IsRequired();
-            entity.HasOne(place => place.Destination).WithMany(destination => destination.Places)
-                .HasForeignKey(place => place.DestinationId).OnDelete(DeleteBehavior.Cascade);
+            ConfigureStringList(entity.Property(place => place.ManualOverrideFields));
+            entity.HasIndex(place => place.ExternalId).IsUnique().HasFilter("\"ExternalId\" IS NOT NULL");
+            entity.HasIndex(place => place.ManualKey).IsUnique().HasFilter("\"ManualKey\" IS NOT NULL");
+        });
+
+        modelBuilder.Entity<DestinationPlace>(entity =>
+        {
+            entity.ToTable("DestinationPlace");
+            entity.HasKey(link => new { link.DestinationId, link.PlaceId });
+            entity.HasOne(link => link.Destination).WithMany(destination => destination.PlaceLinks)
+                .HasForeignKey(link => link.DestinationId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(link => link.Place).WithMany(place => place.DestinationLinks)
+                .HasForeignKey(link => link.PlaceId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<PlacesImportState>(entity =>
+        {
+            entity.ToTable("PlacesImportState");
+            entity.HasKey(state => state.DestinationId);
+            entity.HasOne<Destination>().WithOne().HasForeignKey<PlacesImportState>(state => state.DestinationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<OverpassRequestState>(entity =>
+        {
+            entity.ToTable("OverpassRequestState");
+            entity.HasKey(state => state.Id);
+            entity.Property(state => state.Id).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<Trip>(entity =>

@@ -27,7 +27,7 @@ export default function DestinationMap({ destination, token, language }: { desti
     if (!token || latitude == null || longitude == null || !container.current) return;
     let disposed = false;
     let map: MapboxMap | undefined;
-    const timeout = window.setTimeout(() => { if (!disposed) setStatus("error"); }, 20000);
+    const timeout = window.setTimeout(() => { if (!disposed) setStatus("error"); }, 40000);
     Promise.all([
       import("mapbox-gl"),
       apiFetch(`/api/destinations/${encodeURIComponent(destination.slug)}/map-places`, { cache: "no-store" }),
@@ -58,7 +58,12 @@ export default function DestinationMap({ destination, token, language }: { desti
 
       map.on("load", () => {
         if (disposed || !map) return;
-        map.addSource(PLACE_SOURCE, createClusteredPlaceSource(places));
+        map.addSource(PLACE_SOURCE, {
+          ...createClusteredPlaceSource(places),
+          ...(places.some((place) => place.metadata?.externalId)
+            ? { attribution: `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">${extra.osmAttribution}</a>` }
+            : {}),
+        });
         map.addLayer({
           id: CLUSTER_LAYER, type: "circle", source: PLACE_SOURCE, filter: ["has", "point_count"],
           paint: {
@@ -115,7 +120,7 @@ export default function DestinationMap({ destination, token, language }: { desti
       map.on("error", () => { if (!disposed) setStatus("error"); });
     }).catch(() => { if (!disposed) setStatus("error"); });
     return () => { disposed = true; window.clearTimeout(timeout); map?.remove(); };
-  }, [attempt, destination.id, destination.name, destination.slug, extra.categories, labels.mapDestination, latitude, longitude, token]);
+  }, [attempt, destination.id, destination.name, destination.slug, extra.categories, extra.osmAttribution, labels.mapDestination, latitude, longitude, token]);
 
   return <div className={styles.mapGrid}>
     <div>

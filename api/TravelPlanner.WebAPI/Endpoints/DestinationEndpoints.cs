@@ -19,8 +19,9 @@ public static partial class DestinationEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository, IPlacesImportService placesImporter, CancellationToken cancellationToken)
     {
+        await placesImporter.RefreshAsync(slug, cancellationToken);
         var places = await repository.GetPlacesBySlugAsync(slug, cancellationToken);
         return places is null ? Results.NotFound() : Results.Ok(places);
     }
@@ -36,10 +37,11 @@ public static partial class DestinationEndpoints
             : Results.BadRequest(new { message = result.Error });
     }
 
-    private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository, IPlacesImportService placesImporter, CancellationToken cancellationToken)
     {
         language ??= "bs";
         if (language is not ("bs" or "en")) return Results.BadRequest(new { message = "Podržani jezici su bs i en." });
+        await placesImporter.RefreshAsync(slug, cancellationToken);
         var destination = await repository.GetBySlugAsync(slug, language, cancellationToken);
         return destination is null ? Results.NotFound() : Results.Ok(destination);
     }

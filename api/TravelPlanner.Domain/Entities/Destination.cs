@@ -35,7 +35,7 @@ public sealed class Destination
     public List<string> BestSeasons { get; set; } = [];
     public List<string> Tags { get; set; } = [];
     public bool IsRecommendationEligible { get; set; } = true;
-    public List<Place> Places { get; set; } = [];
+    public List<DestinationPlace> PlaceLinks { get; set; } = [];
     public List<Accommodation> Accommodations { get; set; } = [];
     public List<WeatherSnapshot> WeatherSnapshots { get; set; } = [];
     public List<DestinationTranslation> Translations { get; set; } = [];
