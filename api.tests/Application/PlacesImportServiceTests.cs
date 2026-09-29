@@ -79,6 +79,8 @@ public sealed class PlacesImportServiceTests
         var error = new InvalidOperationException("Database unavailable");
         var repo = new Repository { Target = new(Guid.NewGuid(), 43, 18), WriteError = error };
         Assert.Same(error, await Assert.ThrowsAsync<InvalidOperationException>(() => Service(repo, new()).RefreshAsync("test", default)));
+        Assert.NotNull(repo.FailedLease);
+        Assert.Equal(Now, repo.NextAttempt);
     }
 
     [Theory]
@@ -93,9 +95,57 @@ public sealed class PlacesImportServiceTests
         Assert.Equal(result.RetryAt, repo.NextAttempt);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Cancellation_during_acquire_or_complete_releases_known_candidate_with_cooldown(bool duringAcquire)
+    {
+        using var timeout = new CancellationTokenSource();
+        var repo = new Repository { Target = new(Guid.NewGuid(), 43, 18) };
+        if (duringAcquire)
+            repo.OnAcquire = _ => timeout.Cancel();
+        else
+            repo.OnComplete = _ => timeout.Cancel();
+
+        var result = await Service(repo, new()).RefreshAsync("test", timeout.Token);
+
+        Assert.Equal(new PlacesImportResult(PlacesImportStatus.Deferred, Now.AddMinutes(15)), result);
+        Assert.Equal(repo.CandidateLease, repo.FailedLease);
+        Assert.False(repo.CleanupTokenWasCancelled);
+        Assert.Equal(duringAcquire ? 0 : 1, repo.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task Cleanup_failure_is_reported_without_replacing_provider_result()
+    {
+        var cleanupError = new InvalidOperationException("cleanup failed");
+        var diagnostics = new Diagnostics();
+        var repo = new Repository
+        {
+            Target = new(Guid.NewGuid(), 43, 18),
+            FailError = cleanupError
+        };
+        var providerError = new PlacesProviderException("provider failed");
+
+        var result = await Service(repo, new Provider { Error = providerError }, diagnostics: diagnostics)
+            .RefreshAsync("test", default);
+
+        Assert.Equal(new PlacesImportResult(PlacesImportStatus.Deferred, Now.AddMinutes(15)), result);
+        var report = Assert.Single(diagnostics.Reports);
+        Assert.Same(cleanupError, report.Exception);
+        Assert.Equal("provider failure", report.Reason);
+    }
+
     private static readonly DateTimeOffset Now = new(2026, 9, 21, 12, 0, 0, TimeSpan.Zero);
-    private static PlacesImportService Service(Repository repo, Provider provider) => new(repo, provider, new(), new Clock());
+    private static PlacesImportService Service(Repository repo, Provider provider, PlacesImportOptions? options = null,
+        Diagnostics? diagnostics = null) => new(repo, provider, options ?? new(), new Clock(), diagnostics ?? new());
     private sealed class Clock : TimeProvider { public override DateTimeOffset GetUtcNow() => Now; }
+    private sealed class Diagnostics : IPlacesImportDiagnostics
+    {
+        public List<(Guid DestinationId, Guid LeaseToken, string Reason, Exception Exception)> Reports { get; } = [];
+        public void CleanupFailed(Guid destinationId, Guid leaseToken, string reason, Exception exception) =>
+            Reports.Add((destinationId, leaseToken, reason, exception));
+    }
     private sealed class Provider : IPlacesProvider
     {
         public int Calls { get; private set; }
@@ -111,16 +161,39 @@ public sealed class PlacesImportServiceTests
         public DateTimeOffset? RetryAt { get; init; }
         public bool Commit { get; init; } = true;
         public Exception? WriteError { get; init; }
+        public Exception? FailError { get; init; }
+        public Action<CancellationToken>? OnAcquire { get; set; }
+        public Action<CancellationToken>? OnComplete { get; set; }
         public bool Completed { get; private set; }
+        public int CompleteCalls { get; private set; }
         public string? Signature { get; private set; }
         public TimeSpan Ttl { get; private set; }
         public DateTimeOffset? NextAttempt { get; private set; }
+        public PlacesImportLease? CandidateLease { get; private set; }
+        public PlacesImportLease? FailedLease { get; private set; }
+        public bool CleanupTokenWasCancelled { get; private set; }
         public Task<PlacesImportTarget?> GetTargetAsync(string slug, CancellationToken cancellationToken) => Task.FromResult(Target);
-        public Task<PlacesLeaseResult> TryAcquireAsync(Guid id, string signature, DateTimeOffset now, TimeSpan ttl, CancellationToken cancellationToken)
-        { Signature = signature; Ttl = ttl; return Task.FromResult(Grant ? new PlacesLeaseResult(PlacesLeaseStatus.Acquired, new(Guid.NewGuid(), signature)) : new PlacesLeaseResult(DeniedStatus, RetryAt: RetryAt)); }
+        public Task<PlacesLeaseResult> TryAcquireAsync(Guid id, PlacesImportLease candidate, DateTimeOffset now, TimeSpan ttl, CancellationToken cancellationToken)
+        {
+            CandidateLease = candidate; Signature = candidate.Signature; Ttl = ttl;
+            OnAcquire?.Invoke(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(Grant ? new PlacesLeaseResult(PlacesLeaseStatus.Acquired, candidate) : new PlacesLeaseResult(DeniedStatus, RetryAt: RetryAt));
+        }
         public Task<bool> CompleteAsync(Guid id, PlacesImportLease lease, PlacesData data, DateTimeOffset now, CancellationToken cancellationToken)
-        { if (WriteError is not null) throw WriteError; Completed = Commit; return Task.FromResult(Commit); }
+        {
+            CompleteCalls++;
+            OnComplete?.Invoke(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (WriteError is not null) throw WriteError;
+            Completed = Commit;
+            return Task.FromResult(Commit);
+        }
         public Task FailAsync(Guid id, PlacesImportLease lease, DateTimeOffset next, CancellationToken cancellationToken)
-        { NextAttempt = next; return Task.CompletedTask; }
+        {
+            FailedLease = lease; NextAttempt = next; CleanupTokenWasCancelled = cancellationToken.IsCancellationRequested;
+            if (FailError is not null) throw FailError;
+            return Task.CompletedTask;
+        }
     }
 }

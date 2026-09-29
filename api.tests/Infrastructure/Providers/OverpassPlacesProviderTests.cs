@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging.Abstractions;
 using TravelPlanner.Application.DTOs;
+using TravelPlanner.Application.Services;
 using TravelPlanner.Infrastructure.Providers;
 using Xunit;
 
@@ -124,8 +125,38 @@ public sealed class OverpassPlacesProviderTests
         Assert.Single(handler.Urls);
     }
 
+    [Fact]
+    public async Task Failed_gate_acquire_releases_preallocated_token_without_masking_original_error()
+    {
+        var original = new PlacesProviderException("gate commit uncertain");
+        var gate = new Gate { AcquireError = original };
+
+        var error = await Assert.ThrowsAsync<PlacesProviderException>(() =>
+            Provider(new Handler((_, _) => Task.FromResult(Ok())), gate).GetPlacesAsync(new(43, 18, 10_000), default));
+
+        Assert.Same(original, error);
+        Assert.Equal(gate.AcquiredTokens, gate.ReleasedTokens);
+        Assert.Empty(gate.Fallbacks.Skip(1));
+    }
+
+    [Fact]
+    public async Task Cleanup_error_does_not_replace_provider_error()
+    {
+        var cleanup = new InvalidOperationException("release failed");
+        var gate = new Gate { ReleaseError = cleanup };
+        var handler = new Handler((_, _) => Task.FromResult(
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"remark\":\"bad\"}") }));
+
+        var error = await Assert.ThrowsAsync<PlacesProviderException>(() =>
+            Provider(handler, gate).GetPlacesAsync(new(43, 18, 10_000), default));
+
+        Assert.Equal("Incomplete Overpass response.", error.Message);
+        Assert.Single(gate.ReleasedTokens);
+    }
+
     private static HttpResponseMessage Ok() => new(HttpStatusCode.OK) { Content = new StringContent("{\"elements\":[]}") };
-    private static OverpassPlacesProvider Provider(Handler handler, Gate gate) => new(new Factory(handler), new(), gate, TimeProvider.System, NullLogger<OverpassPlacesProvider>.Instance);
+    private static OverpassPlacesProvider Provider(Handler handler, Gate gate) => new(new Factory(handler), new(), new(), gate,
+        TimeProvider.System, NullLogger<OverpassPlacesProvider>.Instance);
     private sealed class Factory(Handler handler) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
@@ -144,9 +175,21 @@ public sealed class OverpassPlacesProviderTests
     private sealed class Gate : IOverpassRequestGate
     {
         public List<bool> Fallbacks { get; } = [];
+        public List<Guid> AcquiredTokens { get; } = [];
+        public List<Guid> ReleasedTokens { get; } = [];
         public int Releases { get; private set; }
         public DateTimeOffset? RetryAt { get; private set; }
-        public Task<Guid> AcquireAsync(bool fallback, CancellationToken cancellationToken) { Fallbacks.Add(fallback); return Task.FromResult(Guid.NewGuid()); }
-        public Task ReleaseAsync(Guid token, DateTimeOffset? retryAfter, CancellationToken cancellationToken) { Releases++; RetryAt = retryAfter; return Task.CompletedTask; }
+        public Exception? AcquireError { get; init; }
+        public Exception? ReleaseError { get; init; }
+        public Task AcquireAsync(bool fallback, Guid token, CancellationToken cancellationToken)
+        {
+            Fallbacks.Add(fallback); AcquiredTokens.Add(token);
+            return AcquireError is null ? Task.CompletedTask : Task.FromException(AcquireError);
+        }
+        public Task ReleaseAsync(Guid token, DateTimeOffset? retryAfter, CancellationToken cancellationToken)
+        {
+            Releases++; ReleasedTokens.Add(token); RetryAt = retryAfter;
+            return ReleaseError is null ? Task.CompletedTask : Task.FromException(ReleaseError);
+        }
     }
 }

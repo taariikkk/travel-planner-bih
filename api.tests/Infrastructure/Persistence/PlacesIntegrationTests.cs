@@ -8,6 +8,8 @@ using Npgsql;
 using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Api.Infrastructure.Persistence;
 using TravelPlanner.Application.DTOs;
+using TravelPlanner.Application.Interfaces;
+using TravelPlanner.Application.Services;
 using TravelPlanner.Infrastructure.Providers;
 using TravelPlanner.Infrastructure.Repositories;
 using Xunit;
@@ -107,23 +109,23 @@ public sealed class PlacesIntegrationTests
         var id = await database.DestinationAsync("mostar");
         await using var context = database.Context();
         var repo = Repository(context);
-        var lease = (await repo.TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default)).Lease;
+        var lease = (await repo.TryAcquireAsync(id, Lease("query"), Now, TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(lease);
         await repo.CompleteAsync(id, lease, new([]), Now, default);
-        Assert.Equal(PlacesLeaseStatus.Cached, (await repo.TryAcquireAsync(id, "query", Now.AddDays(7).AddTicks(-10), TimeSpan.FromDays(7), default)).Status);
-        var boundary = (await repo.TryAcquireAsync(id, "query", Now.AddDays(7), TimeSpan.FromDays(7), default)).Lease;
+        Assert.Equal(PlacesLeaseStatus.Cached, (await repo.TryAcquireAsync(id, Lease("query"), Now.AddDays(7).AddTicks(-10), TimeSpan.FromDays(7), default)).Status);
+        var boundary = (await repo.TryAcquireAsync(id, Lease("query"), Now.AddDays(7), TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(boundary);
         await repo.FailAsync(id, boundary, Now.AddDays(7).AddMinutes(15), default);
-        var cooldown = await repo.TryAcquireAsync(id, "changed-query", Now.AddDays(7).AddMinutes(1), TimeSpan.FromDays(7), default);
+        var cooldown = await repo.TryAcquireAsync(id, Lease("changed-query"), Now.AddDays(7).AddMinutes(1), TimeSpan.FromDays(7), default);
         Assert.Equal(PlacesLeaseStatus.Deferred, cooldown.Status);
         Assert.Equal(Now.AddDays(7).AddMinutes(15), cooldown.RetryAt);
-        var changed = (await repo.TryAcquireAsync(id, "changed-query", Now.AddDays(7).AddMinutes(15), TimeSpan.FromDays(7), default)).Lease;
+        var changed = (await repo.TryAcquireAsync(id, Lease("changed-query"), Now.AddDays(7).AddMinutes(15), TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(changed);
         await repo.CompleteAsync(id, changed, new([]), Now.AddDays(7).AddMinutes(15), default);
         var state = await context.PlacesImportStates.AsNoTracking().SingleAsync();
         Assert.Equal("changed-query", state.QuerySignature);
         Assert.Equal(Now.AddDays(7).AddMinutes(15), state.SucceededAt);
-        Assert.Equal(PlacesLeaseStatus.Acquired, (await repo.TryAcquireAsync(id, "new-radius", Now.AddDays(7).AddMinutes(16), TimeSpan.FromDays(7), default)).Status);
+        Assert.Equal(PlacesLeaseStatus.Acquired, (await repo.TryAcquireAsync(id, Lease("new-radius"), Now.AddDays(7).AddMinutes(16), TimeSpan.FromDays(7), default)).Status);
     }
 
     [PostgisFact]
@@ -131,17 +133,54 @@ public sealed class PlacesIntegrationTests
     {
         await using var database = await Database.CreateAsync();
         var id = await database.DestinationAsync("mostar");
-        async Task<PlacesImportLease?> Acquire() { await using var c = database.Context(); return (await Repository(c).TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default)).Lease; }
+        async Task<PlacesImportLease?> Acquire() { await using var c = database.Context(); return (await Repository(c).TryAcquireAsync(id, Lease("query"), Now, TimeSpan.FromDays(7), default)).Lease; }
         var results = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => Acquire()));
         var oldLease = Assert.Single(results, r => r is not null)!;
         await using var context = database.Context();
         var repo = Repository(context);
-        var newLease = (await repo.TryAcquireAsync(id, "query", Now.AddMinutes(3), TimeSpan.FromDays(7), default)).Lease;
+        var newLease = (await repo.TryAcquireAsync(id, Lease("query"), Now.AddMinutes(3), TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(newLease);
         Assert.False(await repo.CompleteAsync(id, oldLease, new([Imported]), Now.AddMinutes(3), default));
         Assert.Empty(await context.Places.ToArrayAsync());
         Assert.True(await repo.CompleteAsync(id, newLease, new([Imported]), Now.AddMinutes(3), default));
         Assert.Single(await context.Places.ToArrayAsync());
+    }
+
+    [PostgisFact]
+    public async Task Import_timeout_preserves_places_releases_both_leases_and_sets_cooldown()
+    {
+        await using var database = await Database.CreateAsync();
+        var destinationId = await database.DestinationAsync("mostar");
+        await using var context = database.Context();
+        context.Places.Add(new Place
+        {
+            Id = Guid.NewGuid(), Name = "Existing place", Category = "attraction", Source = "manual",
+            Location = new NetTopologySuite.Geometries.Point(17.815, 43.3373) { SRID = 4326 },
+            DestinationLinks = [new() { DestinationId = destinationId, IsManual = true }]
+        });
+        await context.SaveChangesAsync();
+        var importOptions = new PlacesImportOptions();
+        var overpassOptions = new OverpassOptions { MirrorUrl = null };
+        var provider = new OverpassPlacesProvider(new BlockingHttpFactory(), overpassOptions, importOptions,
+            new OverpassRequestGate(context, overpassOptions, TimeProvider.System), TimeProvider.System,
+            NullLogger<OverpassPlacesProvider>.Instance);
+        var service = new PlacesImportService(Repository(context), provider, importOptions, TimeProvider.System,
+            new NoOpDiagnostics());
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        var result = await service.RefreshAsync("mostar", timeout.Token);
+
+        Assert.Equal(PlacesImportStatus.Deferred, result.Status);
+        Assert.True(result.RetryAt > DateTimeOffset.UtcNow.AddMinutes(14));
+        context.ChangeTracker.Clear();
+        Assert.Single(await context.Places.AsNoTracking().ToArrayAsync());
+        var destinationState = await context.PlacesImportStates.AsNoTracking().SingleAsync();
+        Assert.Null(destinationState.LeaseToken);
+        Assert.Null(destinationState.LeaseUntil);
+        Assert.Equal(result.RetryAt, destinationState.NextAttemptAt);
+        var overpassState = await context.OverpassRequestStates.AsNoTracking().SingleAsync();
+        Assert.Null(overpassState.LeaseToken);
+        Assert.Null(overpassState.LeaseUntil);
     }
 
     [PostgisFact]
@@ -151,7 +190,7 @@ public sealed class PlacesIntegrationTests
         var id = await database.DestinationAsync("mostar");
         await using var context = database.Context();
         var repo = Repository(context);
-        var lease = (await repo.TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default)).Lease;
+        var lease = (await repo.TryAcquireAsync(id, Lease("query"), Now, TimeSpan.FromDays(7), default)).Lease;
         await Assert.ThrowsAsync<DbUpdateException>(() => repo.CompleteAsync(id, lease!, new([Imported, Imported with { ExternalId = "node/456", Name = null! }]), Now, default));
         await using var check = database.Context();
         Assert.Empty(await check.Places.ToArrayAsync());
@@ -169,17 +208,20 @@ public sealed class PlacesIntegrationTests
         await using var second = database.Context();
         var gate = new OverpassRequestGate(first, options, clock);
         var other = new OverpassRequestGate(second, options, clock);
-        var token = await gate.AcquireAsync(false, default);
-        await Assert.ThrowsAsync<PlacesProviderException>(() => other.AcquireAsync(true, default));
+        var token = Guid.NewGuid();
+        await gate.AcquireAsync(false, token, default);
+        await Assert.ThrowsAsync<PlacesProviderException>(() => other.AcquireAsync(true, Guid.NewGuid(), default));
         await gate.ReleaseAsync(token, null, default);
-        await Assert.ThrowsAsync<PlacesProviderException>(() => other.AcquireAsync(false, default));
-        var fallback = await other.AcquireAsync(true, default);
+        await Assert.ThrowsAsync<PlacesProviderException>(() => other.AcquireAsync(false, Guid.NewGuid(), default));
+        var fallback = Guid.NewGuid();
+        await other.AcquireAsync(true, fallback, default);
         await other.ReleaseAsync(fallback, Now.AddMinutes(2), default);
-        await Assert.ThrowsAsync<PlacesProviderException>(() => gate.AcquireAsync(true, default));
+        await Assert.ThrowsAsync<PlacesProviderException>(() => gate.AcquireAsync(true, Guid.NewGuid(), default));
         clock.Now = Now.AddDays(1);
-        var nextDay = await gate.AcquireAsync(false, default);
+        var nextDay = Guid.NewGuid();
+        await gate.AcquireAsync(false, nextDay, default);
         await gate.ReleaseAsync(nextDay, clock.Now.AddMinutes(2), default);
-        var throttled = await Assert.ThrowsAsync<PlacesProviderException>(() => other.AcquireAsync(true, default));
+        var throttled = await Assert.ThrowsAsync<PlacesProviderException>(() => other.AcquireAsync(true, Guid.NewGuid(), default));
         Assert.Equal(clock.Now.AddMinutes(2), throttled.RetryAt);
     }
 
@@ -193,8 +235,28 @@ public sealed class PlacesIntegrationTests
 
     private static string Seed(string key, object fields, string externalId = "node/123") =>
         JsonSerializer.Serialize(new[] { new { key, destinations = new[] { "mostar" }, externalId, fields } });
+    private static PlacesImportLease Lease(string signature) => new(Guid.NewGuid(), signature);
     private static PlacesImportRepository Repository(ApplicationDbContext context) => new(context, NullLogger<PlacesImportRepository>.Instance);
     private sealed class Clock : TimeProvider { public DateTimeOffset Now { get; set; } public override DateTimeOffset GetUtcNow() => Now; }
+    private sealed class NoOpDiagnostics : IPlacesImportDiagnostics
+    {
+        public void CleanupFailed(Guid destinationId, Guid leaseToken, string reason, Exception exception) { }
+    }
+    private sealed class BlockingHttpFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(new BlockingHandler(), disposeHandler: true)
+        {
+            Timeout = Timeout.InfiniteTimeSpan
+        };
+    }
+    private sealed class BlockingHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            throw new InvalidOperationException("Unreachable");
+        }
+    }
     private sealed class EnvironmentStub : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = "Test";
@@ -230,7 +292,7 @@ public sealed class PlacesIntegrationTests
         public async Task ImportAsync(Guid id, IReadOnlyList<PlaceData> places, DateTimeOffset? now = null)
         {
             await using var c = Context(); var repo = Repository(c); var time = now ?? Now;
-            var lease = (await repo.TryAcquireAsync(id, "query", time, TimeSpan.FromDays(7), default)).Lease;
+            var lease = (await repo.TryAcquireAsync(id, Lease("query"), time, TimeSpan.FromDays(7), default)).Lease;
             Assert.NotNull(lease);
             await repo.CompleteAsync(id, lease, new(places), time, default);
         }

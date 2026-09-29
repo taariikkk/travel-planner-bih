@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using TravelPlanner.Application.DTOs;
 using TravelPlanner.Application.Interfaces;
+using TravelPlanner.Application.Services;
 
 namespace TravelPlanner.WebAPI.Endpoints;
 
@@ -21,21 +23,63 @@ public static partial class DestinationEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository,
+        HttpContext context, ILoggerFactory loggerFactory, CancellationToken cancellationToken)
     {
-        var places = await repository.GetPlacesBySlugAsync(slug, cancellationToken);
-        return places is null ? Results.NotFound() : Results.Ok(places);
+        var timer = Stopwatch.StartNew();
+        var logger = loggerFactory.CreateLogger("TravelPlanner.DestinationEndpoints");
+        try
+        {
+            var places = await repository.GetPlacesBySlugAsync(slug, cancellationToken);
+            logger.LogInformation(
+                "Destination map places GET {RequestId} for {Slug} returned {StatusCode} in {ElapsedMs} ms",
+                context.TraceIdentifier, slug, places is null ? StatusCodes.Status404NotFound : StatusCodes.Status200OK,
+                timer.ElapsedMilliseconds);
+            return places is null ? Results.NotFound() : Results.Ok(places);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Destination map places GET {RequestId} for {Slug} failed in {ElapsedMs} ms",
+                context.TraceIdentifier, slug, timer.ElapsedMilliseconds);
+            throw;
+        }
     }
 
-    private static async Task<IResult> RefreshPlacesAsync(string slug, IPlacesImportService importer, CancellationToken cancellationToken)
+    private static async Task<IResult> RefreshPlacesAsync(string slug, IPlacesImportService importer,
+        PlacesImportOptions options, HttpContext context, ILoggerFactory loggerFactory)
     {
-        var result = await importer.RefreshAsync(slug, cancellationToken);
+        var timer = Stopwatch.StartNew();
+        var logger = loggerFactory.CreateLogger("TravelPlanner.DestinationEndpoints");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(options.RefreshTimeoutSeconds));
+        PlacesImportResult result;
+        try
+        {
+            result = await importer.RefreshAsync(slug, timeout.Token);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Destination places refresh POST {RequestId} for {Slug} failed in {ElapsedMs} ms",
+                context.TraceIdentifier, slug, timer.ElapsedMilliseconds);
+            throw;
+        }
+        var status = result.Status switch
+        {
+            PlacesImportStatus.Refreshed => "refreshed",
+            PlacesImportStatus.Cached => "cached",
+            PlacesImportStatus.Deferred => "deferred",
+            PlacesImportStatus.NotFound => "not-found",
+            _ => throw new InvalidOperationException("Unexpected places import status.")
+        };
+        logger.LogInformation(
+            "Destination places refresh POST {RequestId} for {Slug} finished with {ImportStatus} in {ElapsedMs} ms",
+            context.TraceIdentifier, slug, status, timer.ElapsedMilliseconds);
         return result.Status switch
         {
             PlacesImportStatus.NotFound => Results.NotFound(),
-            PlacesImportStatus.Refreshed => Results.Ok(new PlacesRefreshResponse("refreshed", result.RetryAt)),
-            PlacesImportStatus.Cached => Results.Ok(new PlacesRefreshResponse("cached", result.RetryAt)),
-            PlacesImportStatus.Deferred => Results.Ok(new PlacesRefreshResponse("deferred", result.RetryAt)),
+            PlacesImportStatus.Refreshed => Results.Ok(new PlacesRefreshResponse(status, result.RetryAt)),
+            PlacesImportStatus.Cached => Results.Ok(new PlacesRefreshResponse(status, result.RetryAt)),
+            PlacesImportStatus.Deferred => Results.Ok(new PlacesRefreshResponse(status, result.RetryAt)),
             _ => throw new InvalidOperationException("Unexpected places import status.")
         };
     }
@@ -51,12 +95,34 @@ public static partial class DestinationEndpoints
             : Results.BadRequest(new { message = result.Error });
     }
 
-    private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository,
+        HttpContext context, ILoggerFactory loggerFactory, CancellationToken cancellationToken)
     {
+        var timer = Stopwatch.StartNew();
+        var logger = loggerFactory.CreateLogger("TravelPlanner.DestinationEndpoints");
         language ??= "bs";
-        if (language is not ("bs" or "en")) return Results.BadRequest(new { message = "Podržani jezici su bs i en." });
-        var destination = await repository.GetBySlugAsync(slug, language, cancellationToken);
-        return destination is null ? Results.NotFound() : Results.Ok(destination);
+        if (language is not ("bs" or "en"))
+        {
+            logger.LogInformation(
+                "Destination details GET {RequestId} for {Slug} returned {StatusCode} in {ElapsedMs} ms",
+                context.TraceIdentifier, slug, StatusCodes.Status400BadRequest, timer.ElapsedMilliseconds);
+            return Results.BadRequest(new { message = "Podržani jezici su bs i en." });
+        }
+        try
+        {
+            var destination = await repository.GetBySlugAsync(slug, language, cancellationToken);
+            logger.LogInformation(
+                "Destination details GET {RequestId} for {Slug} returned {StatusCode} in {ElapsedMs} ms",
+                context.TraceIdentifier, slug, destination is null ? StatusCodes.Status404NotFound : StatusCodes.Status200OK,
+                timer.ElapsedMilliseconds);
+            return destination is null ? Results.NotFound() : Results.Ok(destination);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Destination details GET {RequestId} for {Slug} failed in {ElapsedMs} ms",
+                context.TraceIdentifier, slug, timer.ElapsedMilliseconds);
+            throw;
+        }
     }
 
     private static async Task<IResult> RecommendAsync(RecommendationRequest? request, ClaimsPrincipal principal, IRecommendationService recommendations, CancellationToken cancellationToken)

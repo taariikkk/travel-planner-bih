@@ -71,16 +71,11 @@ public static class DependencyInjection
 
         var placesOptions = configuration.GetSection("PlacesImport").Get<PlacesImportOptions>() ?? new();
         var overpassOptions = configuration.GetSection("Overpass").Get<OverpassOptions>() ?? new();
-        if (placesOptions.RadiusMeters is <= 0 or > 50_000 || placesOptions.TtlHours <= 0 || placesOptions.FailureCooldownMinutes < 15
-            || overpassOptions.QueryTimeoutSeconds <= 0 || overpassOptions.HttpTimeoutSeconds <= overpassOptions.QueryTimeoutSeconds
-            || overpassOptions.HttpTimeoutSeconds > 45 || overpassOptions.MinImportIntervalSeconds < 30 || overpassOptions.DailyAttemptLimit <= 0
-            || string.IsNullOrWhiteSpace(overpassOptions.UserAgent)
-            || OverpassPlacesProvider.SafeUrl(overpassOptions.PrimaryUrl) is null
-            || (overpassOptions.MirrorUrl is not null && OverpassPlacesProvider.SafeUrl(overpassOptions.MirrorUrl) is null))
-            throw new InvalidOperationException("Places/Overpass configuration is invalid.");
+        ValidatePlacesOptions(placesOptions, overpassOptions);
         services.AddSingleton(placesOptions);
         services.AddSingleton(overpassOptions);
         services.AddScoped<IPlacesImportService, PlacesImportService>();
+        services.AddScoped<IPlacesImportDiagnostics, PlacesImportDiagnostics>();
         services.AddScoped<IPlacesImportRepository, PlacesImportRepository>();
         services.AddScoped<IPlacesProvider, OverpassPlacesProvider>();
         services.AddScoped<IOverpassRequestGate, OverpassRequestGate>();
@@ -123,6 +118,22 @@ public static class DependencyInjection
             });
 
         return services;
+    }
+
+    internal static void ValidatePlacesOptions(PlacesImportOptions placesOptions, OverpassOptions overpassOptions)
+    {
+        var overpassAttemptCount = string.IsNullOrWhiteSpace(overpassOptions.MirrorUrl) ? 1 : 2;
+        var minimumRefreshSeconds = overpassAttemptCount * overpassOptions.HttpTimeoutSeconds
+            + 2 * placesOptions.CleanupTimeoutSeconds + 1;
+        if (placesOptions.RadiusMeters is <= 0 or > 50_000 || placesOptions.TtlHours <= 0 || placesOptions.FailureCooldownMinutes < 15
+            || placesOptions.CleanupTimeoutSeconds <= 0 || placesOptions.RefreshTimeoutSeconds < minimumRefreshSeconds
+            || placesOptions.RefreshTimeoutSeconds + 2 * placesOptions.CleanupTimeoutSeconds >= PlacesImportOptions.DestinationLeaseSeconds
+            || overpassOptions.QueryTimeoutSeconds <= 0 || overpassOptions.HttpTimeoutSeconds <= overpassOptions.QueryTimeoutSeconds
+            || overpassOptions.HttpTimeoutSeconds > 45 || overpassOptions.MinImportIntervalSeconds < 30 || overpassOptions.DailyAttemptLimit <= 0
+            || string.IsNullOrWhiteSpace(overpassOptions.UserAgent)
+            || OverpassPlacesProvider.SafeUrl(overpassOptions.PrimaryUrl) is null
+            || (overpassOptions.MirrorUrl is not null && OverpassPlacesProvider.SafeUrl(overpassOptions.MirrorUrl) is null))
+            throw new InvalidOperationException("Places/Overpass configuration is invalid.");
     }
 
     private static void ConfigureWikimediaClient(HttpClient client, WikimediaOptions options)

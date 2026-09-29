@@ -5,6 +5,7 @@ using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Api.Infrastructure.Persistence;
 using TravelPlanner.Application.DTOs;
 using TravelPlanner.Application.Interfaces;
+using TravelPlanner.Application.Services;
 
 namespace TravelPlanner.Infrastructure.Repositories;
 
@@ -17,24 +18,23 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
         context.Destinations.AsNoTracking().Where(d => d.Slug == slug)
             .Select(d => new PlacesImportTarget(d.Id, d.Latitude, d.Longitude)).SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<PlacesLeaseResult> TryAcquireAsync(Guid destinationId, string signature, DateTimeOffset now,
+    public async Task<PlacesLeaseResult> TryAcquireAsync(Guid destinationId, PlacesImportLease candidate, DateTimeOffset now,
         TimeSpan ttl, CancellationToken cancellationToken)
     {
-        var token = Guid.NewGuid();
-        var until = now.AddMinutes(2);
+        var until = now.AddSeconds(PlacesImportOptions.DestinationLeaseSeconds);
         var freshAfter = now - ttl;
         var count = await context.Database.ExecuteSqlInterpolatedAsync($"""
             INSERT INTO "PlacesImportState" ("DestinationId", "LeaseToken", "LeaseUntil")
-            VALUES ({destinationId}, {token}, {until})
+            VALUES ({destinationId}, {candidate.Token}, {until})
             ON CONFLICT ("DestinationId") DO UPDATE
-            SET "LeaseToken" = {token}, "LeaseUntil" = {until}
+            SET "LeaseToken" = {candidate.Token}, "LeaseUntil" = {until}
             WHERE ("PlacesImportState"."LeaseUntil" IS NULL OR "PlacesImportState"."LeaseUntil" <= {now})
               AND ("PlacesImportState"."NextAttemptAt" IS NULL OR "PlacesImportState"."NextAttemptAt" <= {now})
-              AND ("PlacesImportState"."QuerySignature" IS DISTINCT FROM {signature}
+              AND ("PlacesImportState"."QuerySignature" IS DISTINCT FROM {candidate.Signature}
                    OR "PlacesImportState"."SucceededAt" IS NULL OR "PlacesImportState"."SucceededAt" <= {freshAfter})
             """, cancellationToken);
         logger.LogInformation("Places import {DestinationId}: {CacheState}", destinationId, count == 1 ? "refresh acquired" : "cached or deferred");
-        if (count == 1) return new(PlacesLeaseStatus.Acquired, new(token, signature));
+        if (count == 1) return new(PlacesLeaseStatus.Acquired, candidate);
         // Classification is informational; the conditional upsert above remains the atomic lease authority.
         var state = await context.PlacesImportStates.AsNoTracking()
             .Where(item => item.DestinationId == destinationId)
@@ -42,7 +42,7 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
             .SingleAsync(cancellationToken);
         var retryAt = new[] { state.LeaseUntil, state.NextAttemptAt }.Where(value => value > now).Max();
         if (retryAt is not null) return new(PlacesLeaseStatus.Deferred, RetryAt: retryAt);
-        return state.QuerySignature == signature && state.SucceededAt > freshAfter
+        return state.QuerySignature == candidate.Signature && state.SucceededAt > freshAfter
             ? new(PlacesLeaseStatus.Cached)
             : new(PlacesLeaseStatus.Deferred);
     }
@@ -61,6 +61,7 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
         var existing = await context.Places.Where(p => p.ExternalId != null && ids.Contains(p.ExternalId))
             .ToDictionaryAsync(p => p.ExternalId!, cancellationToken);
         var links = await context.DestinationPlaces.Where(l => l.DestinationId == destinationId).ToListAsync(cancellationToken);
+        var linkedPlaceIds = links.Select(link => link.PlaceId).ToHashSet();
         var seen = new HashSet<Guid>();
         foreach (var item in data.Places.DistinctBy(p => p.ExternalId))
         {
@@ -74,7 +75,7 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
             place.LastVerifiedAt = now;
             place.SourceUrl = $"https://www.openstreetmap.org/{item.ExternalId}";
             seen.Add(place.Id);
-            if (!links.Any(l => l.PlaceId == place.Id))
+            if (linkedPlaceIds.Add(place.Id))
                 context.DestinationPlaces.Add(new() { DestinationId = destinationId, Place = place });
         }
         context.DestinationPlaces.RemoveRange(links.Where(l => !l.IsManual && !seen.Contains(l.PlaceId)));

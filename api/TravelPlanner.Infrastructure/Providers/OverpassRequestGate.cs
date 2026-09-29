@@ -6,13 +6,13 @@ namespace TravelPlanner.Infrastructure.Providers;
 
 public interface IOverpassRequestGate
 {
-    Task<Guid> AcquireAsync(bool fallback, CancellationToken cancellationToken);
+    Task AcquireAsync(bool fallback, Guid token, CancellationToken cancellationToken);
     Task ReleaseAsync(Guid token, DateTimeOffset? retryAfter, CancellationToken cancellationToken);
 }
 
 public sealed class OverpassRequestGate(ApplicationDbContext context, OverpassOptions options, TimeProvider clock) : IOverpassRequestGate
 {
-    public async Task<Guid> AcquireAsync(bool fallback, CancellationToken cancellationToken)
+    public async Task AcquireAsync(bool fallback, Guid token, CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
@@ -30,14 +30,12 @@ public sealed class OverpassRequestGate(ApplicationDbContext context, OverpassOp
             retry = new DateTimeOffset(now.UtcDateTime.Date.AddDays(1));
         if (retry is not null) throw new PlacesProviderException("Overpass request budget/cooldown active.", retry, deferred: true);
         if (state.BudgetDay.Date != now.UtcDateTime.Date) { state.BudgetDay = now.UtcDateTime.Date; state.Attempts = 0; }
-        var token = Guid.NewGuid();
         state.Attempts++;
         state.LeaseToken = token;
         state.LeaseUntil = now.AddSeconds(options.HttpTimeoutSeconds + 10);
         if (!fallback) state.NextImportAt = now.AddSeconds(options.MinImportIntervalSeconds);
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return token;
     }
 
     public async Task ReleaseAsync(Guid token, DateTimeOffset? retryAfter, CancellationToken cancellationToken)

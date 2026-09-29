@@ -248,6 +248,15 @@ public sealed class DestinationEndpointsTests
     }
 
     [Fact]
+    public void Refresh_timeout_must_cover_sequential_attempts_and_cleanup()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            TravelPlanner.Infrastructure.DependencyInjection.ValidatePlacesOptions(
+                new PlacesImportOptions { RefreshTimeoutSeconds = 30 }, new()));
+        Assert.Equal("Places/Overpass configuration is invalid.", error.Message);
+    }
+
+    [Fact]
     public async Task Concurrent_refresh_posts_import_once_and_then_use_the_cache()
     {
         using var factory = new ApiFactory(useRealImporter: true);
@@ -273,6 +282,49 @@ public sealed class DestinationEndpointsTests
         Assert.Equal(1, factory.Provider.Calls);
     }
 
+    [Fact]
+    public async Task Refresh_uses_its_own_timeout_and_sets_cooldown()
+    {
+        using var factory = new ApiFactory(useRealImporter: true, refreshTimeoutSeconds: 1);
+        factory.Provider.Hold = true;
+        using var client = factory.CreateClient();
+
+        using var response = await client.PostAsync("/api/destinations/sarajevo/places/refresh", null)
+            .WaitAsync(TimeSpan.FromSeconds(4));
+        var result = await response.Content.ReadFromJsonAsync<PlacesRefreshResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("deferred", result!.Status);
+        Assert.NotNull(result.RetryAt);
+        Assert.True(result.RetryAt > DateTimeOffset.UtcNow.AddMinutes(14));
+        Assert.True(factory.Provider.CancellationObserved.Task.IsCompleted);
+        Assert.False(factory.ImportRepository.HasActiveLease);
+        Assert.Equal(result.RetryAt, factory.ImportRepository.NextAttemptAt);
+    }
+
+    [Fact]
+    public async Task Client_abort_does_not_cancel_started_refresh()
+    {
+        using var factory = new ApiFactory(useRealImporter: true);
+        factory.Provider.Hold = true;
+        using var client = factory.CreateClient();
+        using var requestCancellation = new CancellationTokenSource();
+        var request = client.PostAsync("/api/destinations/sarajevo/places/refresh", null, requestCancellation.Token);
+        await factory.Provider.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+
+        requestCancellation.Cancel();
+        await Task.Delay(100);
+        factory.Provider.Release.TrySetResult();
+        try { using var _ = await request; }
+        catch (OperationCanceledException) { }
+        await factory.ImportRepository.Cached.Task.WaitAsync(TimeSpan.FromSeconds(3));
+
+        Assert.False(factory.Provider.CancellationObserved.Task.IsCompleted);
+        using var cached = await client.PostAsync("/api/destinations/sarajevo/places/refresh", null);
+        Assert.Equal(new PlacesRefreshResponse("cached", null), await cached.Content.ReadFromJsonAsync<PlacesRefreshResponse>());
+        Assert.Equal(1, factory.Provider.Calls);
+    }
+
     [Theory]
     [InlineData("missing", HttpStatusCode.NotFound)]
     [InlineData("unlocated", HttpStatusCode.OK)]
@@ -288,7 +340,8 @@ public sealed class DestinationEndpointsTests
         Assert.Equal(0, factory.ImportRepository.Acquisitions);
     }
 
-    private sealed class ApiFactory(int importPermitLimit = 5, int searchPermitLimit = 20, bool useRealImporter = false) : WebApplicationFactory<Program>
+    private sealed class ApiFactory(int importPermitLimit = 5, int searchPermitLimit = 20,
+        bool useRealImporter = false, int? refreshTimeoutSeconds = null) : WebApplicationFactory<Program>
     {
         public PlacesImporter Places { get; } = new();
         public ImportRepository ImportRepository { get; } = new();
@@ -309,6 +362,11 @@ public sealed class DestinationEndpointsTests
             }));
             builder.ConfigureTestServices(services =>
             {
+                if (refreshTimeoutSeconds is not null)
+                {
+                    services.RemoveAll<PlacesImportOptions>();
+                    services.AddSingleton(new PlacesImportOptions { RefreshTimeoutSeconds = refreshTimeoutSeconds.Value });
+                }
                 services.RemoveAll<IPlacesImportService>();
                 if (useRealImporter)
                 {
@@ -343,11 +401,20 @@ public sealed class DestinationEndpointsTests
         public bool Hold { get; set; }
         public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource CancellationObserved { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public async Task<PlacesData> GetPlacesAsync(PlacesQuery query, CancellationToken cancellationToken)
         {
             Interlocked.Increment(ref calls);
             Entered.TrySetResult();
-            if (Hold) await Release.Task.WaitAsync(cancellationToken);
+            try
+            {
+                if (Hold) await Release.Task.WaitAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                CancellationObserved.TrySetResult();
+                throw;
+            }
             return new([]); // A successful empty response must still be cached.
         }
     }
@@ -360,16 +427,19 @@ public sealed class DestinationEndpointsTests
         private PlacesImportLease? active;
         private bool cached;
         public int Acquisitions { get; private set; }
+        public bool HasActiveLease { get { lock (sync) return active is not null; } }
+        public DateTimeOffset? NextAttemptAt { get; private set; }
+        public TaskCompletionSource Cached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<PlacesImportTarget?> GetTargetAsync(string slug, CancellationToken cancellationToken) =>
             Task.FromResult<PlacesImportTarget?>(slug == "missing" ? null : new(id, slug == "unlocated" ? null : 43, 18));
-        public Task<PlacesLeaseResult> TryAcquireAsync(Guid destinationId, string signature, DateTimeOffset now, TimeSpan ttl, CancellationToken cancellationToken)
+        public Task<PlacesLeaseResult> TryAcquireAsync(Guid destinationId, PlacesImportLease candidate, DateTimeOffset now, TimeSpan ttl, CancellationToken cancellationToken)
         {
             lock (sync)
             {
                 Acquisitions++;
                 if (active is not null) return Task.FromResult(new PlacesLeaseResult(PlacesLeaseStatus.Deferred, RetryAt: now.AddMinutes(2)));
                 if (cached) return Task.FromResult(new PlacesLeaseResult(PlacesLeaseStatus.Cached));
-                active = new(Guid.NewGuid(), signature);
+                active = candidate;
                 return Task.FromResult(new PlacesLeaseResult(PlacesLeaseStatus.Acquired, active));
             }
         }
@@ -380,12 +450,20 @@ public sealed class DestinationEndpointsTests
                 if (active != lease) return Task.FromResult(false);
                 active = null;
                 cached = true;
+                Cached.TrySetResult();
                 return Task.FromResult(true);
             }
         }
         public Task FailAsync(Guid destinationId, PlacesImportLease lease, DateTimeOffset nextAttemptAt, CancellationToken cancellationToken)
         {
-            lock (sync) { if (active == lease) active = null; }
+            lock (sync)
+            {
+                if (active == lease)
+                {
+                    active = null;
+                    NextAttemptAt = nextAttemptAt;
+                }
+            }
             return Task.CompletedTask;
         }
     }

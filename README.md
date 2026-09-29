@@ -286,12 +286,22 @@ biblioteku za dohvat podataka.
 
 ## OpenStreetMap / Overpass mjesta
 
-Detalji destinacije i `GET /api/destinations/{slug}/map-places` na zahtjev
-osvježavaju restorane i atrakcije u radijusu 10 km, ograničeno na BiH.
-Overpass puni bazu; Mapbox prikazuje podatke i njegovi geocoding rezultati se ne
-pohranjuju. Oba GET endpointa zadržavaju postojeći oblik odgovora; svako mjesto
+`GET /api/destinations/{slug}` i `GET /api/destinations/{slug}/map-places` samo
+čitaju postojeće podatke iz baze i nikada ne čekaju Overpass. Javni
+`POST /api/destinations/{slug}/places/refresh`, bez tijela zahtjeva, pokreće TTL
+osvježavanje restorana i atrakcija u radijusu 10 km, ograničeno na BiH. Vraća
+`refreshed` nakon potvrđenog upisa (uključujući uspješan prazan rezultat),
+`cached` za svjež keš ili `deferred` za aktivan lease, cooldown, globalni limit,
+grešku providera ili destinaciju bez validnih koordinata; `retryAt` je poznati
+sljedeći termin ili `null`. Nepoznat slug vraća 404.
+
+POST ima vlastiti timeout od 35 sekundi i nastavlja započeti import ako HTTP
+klijent prekine vezu. Timeout odgađa novi pokušaj najmanje 15 minuta, a cleanup
+lease-a koristi zaseban ograničeni token. Overpass puni bazu; Mapbox prikazuje
+podatke i njegovi geocoding rezultati se ne pohranjuju. Oba GET endpointa
+zadržavaju postojeći oblik odgovora; svako mjesto
 ima opcioni `metadata` objekat (opisi, adresa, kuhinja, kontakt, porijeklo i datumi),
-`imageUrl` i `imageAttribution`. Nepoznata destinacija vraća 404. Destinacija bez
+`imageUrl` i `imageAttribution`. Destinacija bez
 koordinata koristi samo postojeća mjesta. Opisi imaju `descriptionBs`,
 `descriptionEn` i izvorni `description`/`descriptionLanguage`; neoznačen OSM opis
 ima jezik `und`. Cijene se ne procjenjuju iz OSM tagova.
@@ -304,7 +314,8 @@ Time ostaju važeće reference omiljenih mjesta i itinerera. Ne pokušavamo spaj
 različite OSM identifikatore na osnovu sličnog naziva ili blizine.
 
 `PlacesImport` konfiguracija: `RadiusMeters=10000` (najviše 50000), `TtlHours=168`,
-`FailureCooldownMinutes=15`. Kešira se i uspješan prazan odgovor. Potpis upita
+`FailureCooldownMinutes=15`, `RefreshTimeoutSeconds=35` i
+`CleanupTimeoutSeconds=3`. Kešira se i uspješan prazan odgovor. Potpis upita
 uključuje koordinate, radijus i verziju kategorija. Zakup u bazi traje dvije
 minute; zastarjeli vlasnik zakupa ne može upisati rezultate.
 
@@ -315,8 +326,8 @@ fallback), `UserAgent`, `QueryTimeoutSeconds=10`, `HttpTimeoutSeconds=12`,
 veći od query timeouta i najviše 45 sekundi. Zajednički limit u bazi važi za sve
 API instance: jedan aktivan izlazni poziv, najmanje 30 sekundi između novih
 uvoza, do 90 pokušaja po UTC danu. Fallback se računa kao dodatni pokušaj.
-Odgovor je ograničen na 5 MB. Nema background servisa; sljedeći zahtjev nakon
-isteka keša pokušava osvježavanje.
+Odgovor je ograničen na 5 MB. Nema background servisa; klijent eksplicitno šalje
+POST kada želi pokušati osvježavanje nakon isteka keša.
 
 Timeout, mrežna greška ili 5xx dozvoljavaju jedan mirror pokušaj. HTTP 429/406
 poštuje `Retry-After` (najmanje 30 sekundi) bez neposrednog mirrora. Neispravan
@@ -324,7 +335,8 @@ JSON i Overpass `remark` odbacuju cijeli odgovor. Greška zadržava stari keš i
 odgađa uvoz najmanje 15 minuta; nedostupan globalni budžet samo odgađa pokušaj
 do sljedećeg dozvoljenog termina. Prvi dohvat može trajati do dva HTTP timeouta;
 pri nedostupnosti servera početna lista može ostati prazna. Strukturisani logovi
-bilježe server, trajanje, broj rezultata/preskočenih elemenata i keš stanje.
+bilježe request ID i trajanje GET/POST zahtjeva, status importa, server, trajanje,
+broj rezultata/preskočenih elemenata, keš stanje i eventualnu grešku cleanup-a.
 
 ### Ručna mjesta
 

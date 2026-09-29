@@ -5,11 +5,13 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using TravelPlanner.Application.DTOs;
 using TravelPlanner.Application.Interfaces;
+using TravelPlanner.Application.Services;
 
 namespace TravelPlanner.Infrastructure.Providers;
 
 public sealed class OverpassPlacesProvider(IHttpClientFactory clients, OverpassOptions options,
-    IOverpassRequestGate gate, TimeProvider clock, ILogger<OverpassPlacesProvider> logger) : IPlacesProvider
+    PlacesImportOptions importOptions, IOverpassRequestGate gate, TimeProvider clock,
+    ILogger<OverpassPlacesProvider> logger) : IPlacesProvider
 {
     public const string ClientName = "Overpass";
 
@@ -19,11 +21,12 @@ public sealed class OverpassPlacesProvider(IHttpClientFactory clients, OverpassO
         for (var attempt = 0; attempt < urls.Length; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var token = await gate.AcquireAsync(attempt > 0, cancellationToken);
+            var token = Guid.NewGuid();
             DateTimeOffset? retryAt = null;
             var timer = Stopwatch.StartNew();
             try
             {
+                await gate.AcquireAsync(attempt > 0, token, cancellationToken);
                 using var client = clients.CreateClient(ClientName);
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 timeout.CancelAfter(TimeSpan.FromSeconds(options.HttpTimeoutSeconds));
@@ -67,11 +70,23 @@ public sealed class OverpassPlacesProvider(IHttpClientFactory clients, OverpassO
             }
             finally
             {
-                using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                await gate.ReleaseAsync(token, retryAt, cleanup.Token);
+                await ReleaseGateAsync(token, retryAt);
             }
         }
         throw new PlacesProviderException("Overpass unavailable.");
+    }
+
+    private async Task ReleaseGateAsync(Guid token, DateTimeOffset? retryAt)
+    {
+        using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(importOptions.CleanupTimeoutSeconds));
+        try
+        {
+            await gate.ReleaseAsync(token, retryAt, cleanup.Token);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Overpass gate cleanup failed for lease {LeaseToken}", token);
+        }
     }
 
     public static string BuildQuery(PlacesQuery query, int timeoutSeconds)
