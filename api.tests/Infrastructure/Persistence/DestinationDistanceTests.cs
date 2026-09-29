@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 using TravelPlanner.Api.Infrastructure.Persistence;
 using TravelPlanner.Infrastructure.Repositories;
 using Xunit;
@@ -10,8 +12,10 @@ public sealed class DestinationDistanceTests
     [PostgisFact]
     public async Task Nearby_places_are_limited_to_six_in_distance_order_and_empty_state_is_preserved()
     {
+        var commands = new ReadCommands();
         using var context = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(Environment.GetEnvironmentVariable("TEST_POSTGIS_CONNECTION"), options => options.UseNetTopologySuite()).Options);
+            .UseNpgsql(Environment.GetEnvironmentVariable("TEST_POSTGIS_CONNECTION"), options => options.UseNetTopologySuite())
+            .AddInterceptors(commands).Options);
         await using var transaction = await context.Database.BeginTransactionAsync();
         // A transaction-local shadow table keeps all real Place records untouched.
         await context.Database.ExecuteSqlRawAsync("""
@@ -37,10 +41,29 @@ public sealed class DestinationDistanceTests
         Assert.InRange(result.DistanceFromSarajevoKm!.Value, 75, 77);
         Assert.Null(result.ElevationMeters);
         Assert.Null(result.AverageTemperatureC);
+        commands.Sql.Clear();
         var sarajevo = await repository.GetBySlugAsync("sarajevo", "bs", default);
         Assert.NotNull(sarajevo);
         Assert.Null(sarajevo.DistanceFromSarajevoKm);
+        Assert.Equal(2, commands.Sql.Count);
+        Assert.Single(commands.Sql, sql => sql.Contains("FROM \"Destination\""));
+        var placesSql = Assert.Single(commands.Sql, sql => sql.Contains("FROM \"Place\""));
+        Assert.DoesNotContain("SELECT *", placesSql);
+        Assert.DoesNotContain("ManualOverrideFields", placesSql);
+        Assert.Contains("ORDER BY", placesSql);
+        Assert.Contains("LIMIT", placesSql);
         await transaction.RollbackAsync();
+    }
+
+    private sealed class ReadCommands : DbCommandInterceptor
+    {
+        public List<string> Sql { get; } = [];
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
+            CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            Sql.Add(command.CommandText);
+            return ValueTask.FromResult(result);
+        }
     }
 
     [Fact]

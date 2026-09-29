@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Application.Interfaces;
 using TravelPlanner.Application.DTOs;
+using TravelPlanner.Application.Services;
 using Xunit;
 
 namespace TravelPlanner.Api.Tests.WebAPI;
@@ -189,19 +190,109 @@ public sealed class DestinationEndpointsTests
         return body.RootElement.GetProperty("accessToken").GetString()!;
     }
 
-    [Fact]
-    public async Task Both_places_read_endpoints_refresh_before_reading()
+    [Theory]
+    [InlineData("/api/destinations/mostar")]
+    [InlineData("/api/destinations/sarajevo/map-places")]
+    [InlineData("/api/destinations/trebinje")]
+    [InlineData("/api/destinations/trebinje/map-places")]
+    public async Task Reads_finish_without_calling_a_blocked_importer(string url)
     {
         using var factory = new ApiFactory();
+        factory.Places.Block = true;
         using var client = factory.CreateClient();
-        await client.GetAsync("/api/destinations/mostar");
-        await client.GetAsync("/api/destinations/sarajevo/map-places");
-        Assert.Equal(new[] { "mostar", "sarajevo" }, factory.Places.Calls);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        using var response = await client.GetAsync(url, deadline.Token);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Empty(factory.Places.Calls);
     }
 
-    private sealed class ApiFactory(int importPermitLimit = 5, int searchPermitLimit = 20) : WebApplicationFactory<Program>
+    [Theory]
+    [InlineData(PlacesImportStatus.Refreshed, "refreshed")]
+    [InlineData(PlacesImportStatus.Cached, "cached")]
+    [InlineData(PlacesImportStatus.Deferred, "deferred")]
+    public async Task Refresh_is_public_without_body_and_preserves_status_and_retry(PlacesImportStatus status, string expected)
+    {
+        using var factory = new ApiFactory();
+        var retry = status == PlacesImportStatus.Deferred ? DateTimeOffset.UtcNow.AddMinutes(15) : (DateTimeOffset?)null;
+        factory.Places.Result = new(status, retry);
+        using var client = factory.CreateClient();
+        using var response = await client.PostAsync("/api/destinations/sarajevo/places/refresh", null);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(new PlacesRefreshResponse(expected, retry), await response.Content.ReadFromJsonAsync<PlacesRefreshResponse>());
+        Assert.Equal(new[] { "sarajevo" }, factory.Places.Calls);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(2, body.RootElement.EnumerateObject().Count());
+        Assert.True(body.RootElement.TryGetProperty("retryAt", out _));
+    }
+
+    [Fact]
+    public async Task Refresh_unknown_slug_returns_not_found()
+    {
+        using var factory = new ApiFactory();
+        factory.Places.Result = new(PlacesImportStatus.NotFound);
+        using var client = factory.CreateClient();
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync("/api/destinations/missing/places/refresh", null)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Refresh_is_limited_to_twenty_requests_without_limiting_reads()
+    {
+        using var factory = new ApiFactory();
+        factory.Places.Result = new(PlacesImportStatus.Cached);
+        using var client = factory.CreateClient();
+        for (var i = 0; i < 20; i++)
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/destinations/sarajevo/places/refresh", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsync("/api/destinations/sarajevo/places/refresh", null)).StatusCode);
+        Assert.Equal(20, factory.Places.Calls.Count);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/destinations/sarajevo/map-places")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Concurrent_refresh_posts_import_once_and_then_use_the_cache()
+    {
+        using var factory = new ApiFactory(useRealImporter: true);
+        factory.Provider.Hold = true;
+        using var client = factory.CreateClient();
+        var first = client.PostAsync("/api/destinations/sarajevo/places/refresh", null);
+        try
+        {
+            await factory.Provider.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            using var second = await client.PostAsync("/api/destinations/sarajevo/places/refresh", null)
+                .WaitAsync(TimeSpan.FromSeconds(3));
+            var deferred = await second.Content.ReadFromJsonAsync<PlacesRefreshResponse>();
+            Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+            Assert.Equal("deferred", deferred!.Status);
+            Assert.NotNull(deferred.RetryAt);
+            Assert.Equal(1, factory.Provider.Calls);
+        }
+        finally { factory.Provider.Release.TrySetResult(); }
+        using var completed = await first;
+        Assert.Equal(new PlacesRefreshResponse("refreshed", null), await completed.Content.ReadFromJsonAsync<PlacesRefreshResponse>());
+        using var cached = await client.PostAsync("/api/destinations/sarajevo/places/refresh", null);
+        Assert.Equal(new PlacesRefreshResponse("cached", null), await cached.Content.ReadFromJsonAsync<PlacesRefreshResponse>());
+        Assert.Equal(1, factory.Provider.Calls);
+    }
+
+    [Theory]
+    [InlineData("missing", HttpStatusCode.NotFound)]
+    [InlineData("unlocated", HttpStatusCode.OK)]
+    public async Task Refresh_unknown_or_unlocated_destination_never_calls_provider(string slug, HttpStatusCode expected)
+    {
+        using var factory = new ApiFactory(useRealImporter: true);
+        using var client = factory.CreateClient();
+        using var response = await client.PostAsync($"/api/destinations/{slug}/places/refresh", null);
+        Assert.Equal(expected, response.StatusCode);
+        if (response.IsSuccessStatusCode)
+            Assert.Equal(new PlacesRefreshResponse("deferred", null), await response.Content.ReadFromJsonAsync<PlacesRefreshResponse>());
+        Assert.Equal(0, factory.Provider.Calls);
+        Assert.Equal(0, factory.ImportRepository.Acquisitions);
+    }
+
+    private sealed class ApiFactory(int importPermitLimit = 5, int searchPermitLimit = 20, bool useRealImporter = false) : WebApplicationFactory<Program>
     {
         public PlacesImporter Places { get; } = new();
+        public ImportRepository ImportRepository { get; } = new();
+        public GatedProvider Provider { get; } = new();
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
@@ -219,7 +310,15 @@ public sealed class DestinationEndpointsTests
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<IPlacesImportService>();
-                services.AddSingleton<IPlacesImportService>(Places);
+                if (useRealImporter)
+                {
+                    services.AddScoped<IPlacesImportService, PlacesImportService>();
+                    services.RemoveAll<IPlacesImportRepository>();
+                    services.RemoveAll<IPlacesProvider>();
+                    services.AddSingleton<IPlacesImportRepository>(ImportRepository);
+                    services.AddSingleton<IPlacesProvider>(Provider);
+                }
+                else services.AddSingleton<IPlacesImportService>(Places);
                 services.RemoveAll<IUserRepository>();
                 services.RemoveAll<IDestinationRepository>();
                 services.AddSingleton<Users>();
@@ -237,10 +336,71 @@ public sealed class DestinationEndpointsTests
         }
     }
 
+    private sealed class GatedProvider : IPlacesProvider
+    {
+        private int calls;
+        public int Calls => calls;
+        public bool Hold { get; set; }
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public async Task<PlacesData> GetPlacesAsync(PlacesQuery query, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref calls);
+            Entered.TrySetResult();
+            if (Hold) await Release.Task.WaitAsync(cancellationToken);
+            return new([]); // A successful empty response must still be cached.
+        }
+    }
+
+    // Atomic test double; actual SQL concurrency is covered by PlacesIntegrationTests.
+    private sealed class ImportRepository : IPlacesImportRepository
+    {
+        private readonly object sync = new();
+        private readonly Guid id = Guid.NewGuid();
+        private PlacesImportLease? active;
+        private bool cached;
+        public int Acquisitions { get; private set; }
+        public Task<PlacesImportTarget?> GetTargetAsync(string slug, CancellationToken cancellationToken) =>
+            Task.FromResult<PlacesImportTarget?>(slug == "missing" ? null : new(id, slug == "unlocated" ? null : 43, 18));
+        public Task<PlacesLeaseResult> TryAcquireAsync(Guid destinationId, string signature, DateTimeOffset now, TimeSpan ttl, CancellationToken cancellationToken)
+        {
+            lock (sync)
+            {
+                Acquisitions++;
+                if (active is not null) return Task.FromResult(new PlacesLeaseResult(PlacesLeaseStatus.Deferred, RetryAt: now.AddMinutes(2)));
+                if (cached) return Task.FromResult(new PlacesLeaseResult(PlacesLeaseStatus.Cached));
+                active = new(Guid.NewGuid(), signature);
+                return Task.FromResult(new PlacesLeaseResult(PlacesLeaseStatus.Acquired, active));
+            }
+        }
+        public Task<bool> CompleteAsync(Guid destinationId, PlacesImportLease lease, PlacesData data, DateTimeOffset now, CancellationToken cancellationToken)
+        {
+            lock (sync)
+            {
+                if (active != lease) return Task.FromResult(false);
+                active = null;
+                cached = true;
+                return Task.FromResult(true);
+            }
+        }
+        public Task FailAsync(Guid destinationId, PlacesImportLease lease, DateTimeOffset nextAttemptAt, CancellationToken cancellationToken)
+        {
+            lock (sync) { if (active == lease) active = null; }
+            return Task.CompletedTask;
+        }
+    }
+
     private sealed class PlacesImporter : IPlacesImportService
     {
         public List<string> Calls { get; } = [];
-        public Task RefreshAsync(string slug, CancellationToken cancellationToken) { Calls.Add(slug); return Task.CompletedTask; }
+        public bool Block { get; set; }
+        public PlacesImportResult Result { get; set; } = new(PlacesImportStatus.Refreshed);
+        public async Task<PlacesImportResult> RefreshAsync(string slug, CancellationToken cancellationToken)
+        {
+            Calls.Add(slug);
+            if (Block) await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return Result;
+        }
     }
 
     private sealed class Importer : IDestinationImportService

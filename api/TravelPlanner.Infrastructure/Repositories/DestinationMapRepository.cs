@@ -15,18 +15,9 @@ public sealed class DestinationMapRepository(ApplicationDbContext context) : IDe
             .SingleOrDefaultAsync(cancellationToken);
         if (destinationId is null) return null;
 
-        var places = await context.Places.FromSqlInterpolated($"""
-            SELECT * FROM "Place"
-            WHERE "Id" IN (SELECT "PlaceId" FROM "DestinationPlace" WHERE "DestinationId" = {destinationId.Value})
-              AND NOT ST_IsEmpty("Location")
-              AND ST_X("Location") BETWEEN -180 AND 180
-              AND ST_Y("Location") BETWEEN -90 AND 90
-            ORDER BY "Name", "Id"
-            """).AsNoTracking().ToArrayAsync(cancellationToken);
+        var places = await PlaceReadModel.Query(context, destinationId.Value)
+            .OrderBy(place => place.Name).ThenBy(place => place.Id).ToArrayAsync(cancellationToken);
 
-        return places.Select(place => new DestinationMapPlaceResponse(
-            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X,
-            PlaceMetadataResponse.From(place), PlaceMetadataResponse.ImageAttribution(place) is null ? null : place.ImageUrl,
-            PlaceMetadataResponse.ImageAttribution(place))).ToArray();
+        return places.Select(place => place.ToMapResponse()).ToArray();
     }
 }

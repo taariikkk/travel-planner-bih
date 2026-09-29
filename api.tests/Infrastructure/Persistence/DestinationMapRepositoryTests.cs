@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TravelPlanner.Application.DTOs;
 using NetTopologySuite.Geometries;
 using TravelPlanner.Api.Domain.Entities;
 using TravelPlanner.Api.Infrastructure.Persistence;
@@ -27,15 +28,46 @@ public sealed class DestinationMapRepositoryTests
             Name = $"{prefix} {index:00}",
             Category = index % 2 == 0 ? "attraction" : "restaurant",
             Source = "manual",
+            DescriptionBs = "Opis", DescriptionEn = "Description", Description = "Original",
+            DescriptionLanguage = "und", Address = "Address", Cuisine = "local", PriceLevel = "budget",
+            Website = "https://example.org", Phone = "123", Email = "test@example.org",
+            ExternalId = $"node/{index + 1}", SourceUrl = "https://openstreetmap.org",
+            ImportedAt = DateTimeOffset.Parse("2026-09-21T12:00:00Z"), LastVerifiedAt = DateTimeOffset.Parse("2026-09-22T12:00:00Z"),
+            ImageUrl = "https://example.org/image.jpg", ImageAuthor = "Author", ImageLicense = "CC0",
+            ImageSourceUrl = index == 0 ? null : "https://example.org/source",
             Location = new Point(18.39 + index * 0.0001, 43.84 + index * 0.0001) { SRID = 4326 }
         }).ToArray();
         context.Places.AddRange(places);
+        context.Places.Add(new Place
+        {
+            Id = Guid.NewGuid(), Name = "Invalid coordinates", Category = "attraction", Source = "manual",
+            Location = new Point(181, 43) { SRID = 4326 },
+            DestinationLinks = [new() { DestinationId = destination.Id, IsManual = true }]
+        });
         await context.SaveChangesAsync();
 
         var result = await new DestinationMapRepository(context).GetPlacesBySlugAsync(destination.Slug, default);
 
         Assert.NotNull(result);
-        Assert.Equal(80, result.Count(place => place.Name.StartsWith(prefix, StringComparison.Ordinal)));
+        Assert.Equal(80, result.Count);
+        Assert.Equal(places.Select(place => place.Id), result.Select(place => place.Id));
+        Assert.Null(result[0].ImageUrl);
+        Assert.Null(result[0].ImageAttribution);
+        Assert.Equal(new ImageAttributionResponse("Author", "CC0", "https://example.org/source"), result[1].ImageAttribution);
+        Assert.Equal(places[1].ImageUrl, result[1].ImageUrl);
+        Assert.Equal(PlaceMetadataResponse.From(places[1]), result[1].Metadata);
+        var details = await new DestinationDetailsRepository(context).GetBySlugAsync(destination.Slug, "bs", default);
+        Assert.NotNull(details);
+        Assert.Equal(6, details.Places.Count);
+        foreach (var detail in details.Places)
+        {
+            var mapPlace = Assert.Single(result, place => place.Id == detail.Id);
+            Assert.Equal(mapPlace.Metadata, detail.Metadata);
+            Assert.Equal(mapPlace.ImageAttribution, detail.ImageAttribution);
+            Assert.Equal(mapPlace.ImageUrl, detail.ImageUrl);
+            Assert.Equal(mapPlace.Latitude, detail.Latitude);
+            Assert.Equal(mapPlace.Longitude, detail.Longitude);
+        }
 
         await transaction.RollbackAsync();
     }

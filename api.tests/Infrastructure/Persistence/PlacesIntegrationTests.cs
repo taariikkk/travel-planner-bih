@@ -107,21 +107,23 @@ public sealed class PlacesIntegrationTests
         var id = await database.DestinationAsync("mostar");
         await using var context = database.Context();
         var repo = Repository(context);
-        var lease = await repo.TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default);
+        var lease = (await repo.TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(lease);
         await repo.CompleteAsync(id, lease, new([]), Now, default);
-        Assert.Null(await repo.TryAcquireAsync(id, "query", Now.AddDays(7).AddTicks(-10), TimeSpan.FromDays(7), default));
-        var boundary = await repo.TryAcquireAsync(id, "query", Now.AddDays(7), TimeSpan.FromDays(7), default);
+        Assert.Equal(PlacesLeaseStatus.Cached, (await repo.TryAcquireAsync(id, "query", Now.AddDays(7).AddTicks(-10), TimeSpan.FromDays(7), default)).Status);
+        var boundary = (await repo.TryAcquireAsync(id, "query", Now.AddDays(7), TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(boundary);
         await repo.FailAsync(id, boundary, Now.AddDays(7).AddMinutes(15), default);
-        Assert.Null(await repo.TryAcquireAsync(id, "changed-query", Now.AddDays(7).AddMinutes(1), TimeSpan.FromDays(7), default));
-        var changed = await repo.TryAcquireAsync(id, "changed-query", Now.AddDays(7).AddMinutes(15), TimeSpan.FromDays(7), default);
+        var cooldown = await repo.TryAcquireAsync(id, "changed-query", Now.AddDays(7).AddMinutes(1), TimeSpan.FromDays(7), default);
+        Assert.Equal(PlacesLeaseStatus.Deferred, cooldown.Status);
+        Assert.Equal(Now.AddDays(7).AddMinutes(15), cooldown.RetryAt);
+        var changed = (await repo.TryAcquireAsync(id, "changed-query", Now.AddDays(7).AddMinutes(15), TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(changed);
         await repo.CompleteAsync(id, changed, new([]), Now.AddDays(7).AddMinutes(15), default);
         var state = await context.PlacesImportStates.AsNoTracking().SingleAsync();
         Assert.Equal("changed-query", state.QuerySignature);
         Assert.Equal(Now.AddDays(7).AddMinutes(15), state.SucceededAt);
-        Assert.NotNull(await repo.TryAcquireAsync(id, "new-radius", Now.AddDays(7).AddMinutes(16), TimeSpan.FromDays(7), default));
+        Assert.Equal(PlacesLeaseStatus.Acquired, (await repo.TryAcquireAsync(id, "new-radius", Now.AddDays(7).AddMinutes(16), TimeSpan.FromDays(7), default)).Status);
     }
 
     [PostgisFact]
@@ -129,16 +131,16 @@ public sealed class PlacesIntegrationTests
     {
         await using var database = await Database.CreateAsync();
         var id = await database.DestinationAsync("mostar");
-        async Task<PlacesImportLease?> Acquire() { await using var c = database.Context(); return await Repository(c).TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default); }
+        async Task<PlacesImportLease?> Acquire() { await using var c = database.Context(); return (await Repository(c).TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default)).Lease; }
         var results = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => Acquire()));
         var oldLease = Assert.Single(results, r => r is not null)!;
         await using var context = database.Context();
         var repo = Repository(context);
-        var newLease = await repo.TryAcquireAsync(id, "query", Now.AddMinutes(3), TimeSpan.FromDays(7), default);
+        var newLease = (await repo.TryAcquireAsync(id, "query", Now.AddMinutes(3), TimeSpan.FromDays(7), default)).Lease;
         Assert.NotNull(newLease);
-        await repo.CompleteAsync(id, oldLease, new([Imported]), Now.AddMinutes(3), default);
+        Assert.False(await repo.CompleteAsync(id, oldLease, new([Imported]), Now.AddMinutes(3), default));
         Assert.Empty(await context.Places.ToArrayAsync());
-        await repo.CompleteAsync(id, newLease, new([Imported]), Now.AddMinutes(3), default);
+        Assert.True(await repo.CompleteAsync(id, newLease, new([Imported]), Now.AddMinutes(3), default));
         Assert.Single(await context.Places.ToArrayAsync());
     }
 
@@ -149,7 +151,7 @@ public sealed class PlacesIntegrationTests
         var id = await database.DestinationAsync("mostar");
         await using var context = database.Context();
         var repo = Repository(context);
-        var lease = await repo.TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default);
+        var lease = (await repo.TryAcquireAsync(id, "query", Now, TimeSpan.FromDays(7), default)).Lease;
         await Assert.ThrowsAsync<DbUpdateException>(() => repo.CompleteAsync(id, lease!, new([Imported, Imported with { ExternalId = "node/456", Name = null! }]), Now, default));
         await using var check = database.Context();
         Assert.Empty(await check.Places.ToArrayAsync());
@@ -228,7 +230,7 @@ public sealed class PlacesIntegrationTests
         public async Task ImportAsync(Guid id, IReadOnlyList<PlaceData> places, DateTimeOffset? now = null)
         {
             await using var c = Context(); var repo = Repository(c); var time = now ?? Now;
-            var lease = await repo.TryAcquireAsync(id, "query", time, TimeSpan.FromDays(7), default);
+            var lease = (await repo.TryAcquireAsync(id, "query", time, TimeSpan.FromDays(7), default)).Lease;
             Assert.NotNull(lease);
             await repo.CompleteAsync(id, lease, new(places), time, default);
         }

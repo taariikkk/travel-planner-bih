@@ -17,7 +17,7 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
         context.Destinations.AsNoTracking().Where(d => d.Slug == slug)
             .Select(d => new PlacesImportTarget(d.Id, d.Latitude, d.Longitude)).SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<PlacesImportLease?> TryAcquireAsync(Guid destinationId, string signature, DateTimeOffset now,
+    public async Task<PlacesLeaseResult> TryAcquireAsync(Guid destinationId, string signature, DateTimeOffset now,
         TimeSpan ttl, CancellationToken cancellationToken)
     {
         var token = Guid.NewGuid();
@@ -34,10 +34,20 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
                    OR "PlacesImportState"."SucceededAt" IS NULL OR "PlacesImportState"."SucceededAt" <= {freshAfter})
             """, cancellationToken);
         logger.LogInformation("Places import {DestinationId}: {CacheState}", destinationId, count == 1 ? "refresh acquired" : "cached or deferred");
-        return count == 1 ? new(token, signature) : null;
+        if (count == 1) return new(PlacesLeaseStatus.Acquired, new(token, signature));
+        // Classification is informational; the conditional upsert above remains the atomic lease authority.
+        var state = await context.PlacesImportStates.AsNoTracking()
+            .Where(item => item.DestinationId == destinationId)
+            .Select(item => new { item.LeaseUntil, item.NextAttemptAt, item.QuerySignature, item.SucceededAt })
+            .SingleAsync(cancellationToken);
+        var retryAt = new[] { state.LeaseUntil, state.NextAttemptAt }.Where(value => value > now).Max();
+        if (retryAt is not null) return new(PlacesLeaseStatus.Deferred, RetryAt: retryAt);
+        return state.QuerySignature == signature && state.SucceededAt > freshAfter
+            ? new(PlacesLeaseStatus.Cached)
+            : new(PlacesLeaseStatus.Deferred);
     }
 
-    public async Task CompleteAsync(Guid destinationId, PlacesImportLease lease, PlacesData data,
+    public async Task<bool> CompleteAsync(Guid destinationId, PlacesImportLease lease, PlacesData data,
         DateTimeOffset now, CancellationToken cancellationToken)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
@@ -46,7 +56,7 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
             SELECT * FROM "PlacesImportState" WHERE "DestinationId" = {destinationId} FOR UPDATE
             """).SingleAsync(cancellationToken);
         await context.Entry(state).ReloadAsync(cancellationToken);
-        if (state.LeaseToken != lease.Token || state.LeaseUntil <= now) return;
+        if (state.LeaseToken != lease.Token || state.LeaseUntil <= now) return false;
         var ids = data.Places.Select(p => p.ExternalId).Distinct().ToArray();
         var existing = await context.Places.Where(p => p.ExternalId != null && ids.Contains(p.ExternalId))
             .ToDictionaryAsync(p => p.ExternalId!, cancellationToken);
@@ -76,6 +86,7 @@ public sealed class PlacesImportRepository(ApplicationDbContext context, ILogger
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Places import {DestinationId} saved {Count} places; skipped {Skipped}", destinationId, seen.Count, data.SkippedCount);
+        return true;
     }
 
     public async Task FailAsync(Guid destinationId, PlacesImportLease lease, DateTimeOffset nextAttemptAt, CancellationToken cancellationToken)

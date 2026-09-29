@@ -16,14 +16,28 @@ public static partial class DestinationEndpoints
         // Public curated destination content; personalized recommendations keep their existing authorization.
         destinations.MapGet("/{slug}", GetDetailsAsync).AllowAnonymous();
         destinations.MapGet("/{slug}/map-places", GetMapPlacesAsync).AllowAnonymous();
+        destinations.MapPost("/{slug}/places/refresh", RefreshPlacesAsync).AllowAnonymous()
+            .RequireRateLimiting("places-refresh");
         return app;
     }
 
-    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository, IPlacesImportService placesImporter, CancellationToken cancellationToken)
+    private static async Task<IResult> GetMapPlacesAsync(string slug, IDestinationMapRepository repository, CancellationToken cancellationToken)
     {
-        await placesImporter.RefreshAsync(slug, cancellationToken);
         var places = await repository.GetPlacesBySlugAsync(slug, cancellationToken);
         return places is null ? Results.NotFound() : Results.Ok(places);
+    }
+
+    private static async Task<IResult> RefreshPlacesAsync(string slug, IPlacesImportService importer, CancellationToken cancellationToken)
+    {
+        var result = await importer.RefreshAsync(slug, cancellationToken);
+        return result.Status switch
+        {
+            PlacesImportStatus.NotFound => Results.NotFound(),
+            PlacesImportStatus.Refreshed => Results.Ok(new PlacesRefreshResponse("refreshed", result.RetryAt)),
+            PlacesImportStatus.Cached => Results.Ok(new PlacesRefreshResponse("cached", result.RetryAt)),
+            PlacesImportStatus.Deferred => Results.Ok(new PlacesRefreshResponse("deferred", result.RetryAt)),
+            _ => throw new InvalidOperationException("Unexpected places import status.")
+        };
     }
 
     private static async Task<IResult> ImportAsync(DestinationImportRequest? request, IDestinationImportService importer, CancellationToken cancellationToken)
@@ -37,11 +51,10 @@ public static partial class DestinationEndpoints
             : Results.BadRequest(new { message = result.Error });
     }
 
-    private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository, IPlacesImportService placesImporter, CancellationToken cancellationToken)
+    private static async Task<IResult> GetDetailsAsync(string slug, string? language, IDestinationDetailsRepository repository, CancellationToken cancellationToken)
     {
         language ??= "bs";
         if (language is not ("bs" or "en")) return Results.BadRequest(new { message = "Podržani jezici su bs i en." });
-        await placesImporter.RefreshAsync(slug, cancellationToken);
         var destination = await repository.GetBySlugAsync(slug, language, cancellationToken);
         return destination is null ? Results.NotFound() : Results.Ok(destination);
     }

@@ -14,23 +14,18 @@ public sealed class DestinationDetailsRepository(ApplicationDbContext context) :
             .SingleOrDefaultAsync(item => item.Slug == slug, cancellationToken);
         if (destination is null) return null;
         var translation = destination.Translations.FirstOrDefault(item => item.LanguageCode == language);
-        var nearest = destination is { Latitude: not null, Longitude: not null }
-            ? await context.Places.FromSqlInterpolated($"""
-                SELECT * FROM "Place"
-                WHERE "Id" IN (SELECT "PlaceId" FROM "DestinationPlace" WHERE "DestinationId" = {destination.Id})
-                  AND NOT ST_IsEmpty("Location")
-                  AND ST_X("Location") BETWEEN -180 AND 180
-                  AND ST_Y("Location") BETWEEN -90 AND 90
-                ORDER BY ST_Distance("Location"::geography,
-                    ST_SetSRID(ST_MakePoint({destination.Longitude.Value}, {destination.Latitude.Value}), 4326)::geography), "Name", "Id"
-                LIMIT 6
-                """).AsNoTracking().ToArrayAsync(cancellationToken)
-            : await context.Places.Where(place => place.DestinationLinks.Any(link => link.DestinationId == destination.Id)).AsNoTracking().OrderBy(place => place.Name).ThenBy(place => place.Id).Take(6).ToArrayAsync(cancellationToken);
-        var placeResponses = nearest.Select(place => new PlaceResponse(
-            place.Id, place.Name, place.Category, place.Location.Y, place.Location.X,
-            PlaceMetadataResponse.ImageAttribution(place) is null ? null : place.ImageUrl,
-            PlaceMetadataResponse.ImageAttribution(place), PlaceMetadataResponse.From(place))).ToArray();
-        var sarajevo = await context.Destinations.AsNoTracking().SingleOrDefaultAsync(item => item.Slug == "sarajevo", cancellationToken);
+        var hasCoordinates = destination is { Latitude: not null, Longitude: not null };
+        var placesQuery = PlaceReadModel.Query(context, destination.Id, destination.Latitude, destination.Longitude,
+            validCoordinatesOnly: hasCoordinates);
+        var nearest = await (hasCoordinates
+                ? placesQuery.OrderBy(place => place.DistanceMeters).ThenBy(place => place.Name).ThenBy(place => place.Id)
+                : placesQuery.OrderBy(place => place.Name).ThenBy(place => place.Id))
+            .Take(6).ToArrayAsync(cancellationToken);
+        var placeResponses = nearest.Select(place => place.ToDetailsResponse()).ToArray();
+        var sarajevo = destination.Slug != "sarajevo" && destination.Latitude is not null && destination.Longitude is not null
+            ? await context.Destinations.AsNoTracking().Where(item => item.Slug == "sarajevo")
+                .Select(item => new { item.Latitude, item.Longitude }).SingleOrDefaultAsync(cancellationToken)
+            : null;
         var distance = destination.Slug != "sarajevo" && destination.Latitude is not null && destination.Longitude is not null
             && sarajevo is { Latitude: not null, Longitude: not null }
             ? await context.Database.SqlQuery<double>(DestinationDistance.QueryKm(destination.Latitude.Value, destination.Longitude.Value, sarajevo.Latitude.Value, sarajevo.Longitude.Value)).SingleAsync(cancellationToken)
