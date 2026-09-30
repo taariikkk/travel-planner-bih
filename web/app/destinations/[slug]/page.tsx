@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { apiFetch, getErrorMessage } from "../../lib/api";
 import { formatTag, getLanguage, LANGUAGE_COOKIE, text } from "../../lib/i18n";
-import DestinationMap from "./destination-map";
+import DestinationPlacesRefresh from "./destination-places-refresh";
 import DestinationFavoriteButton from "./destination-favorite-button";
 import { formatDestinationStatistics } from "./destination-statistics";
 import type { Destination } from "./types";
@@ -58,7 +58,7 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
       </div>
     </div>
 
-    <section id="mapa" className={styles.mapSection} aria-labelledby="map-title"><div className={styles.mapHeading}><div><span>05</span><h2 id="map-title">{labels.mapTitle}</h2></div><p>{labels.mapIntro}</p></div><DestinationMap destination={destination} token={publicToken} language={language} /></section>
+    <section id="mapa" className={styles.mapSection} aria-labelledby="map-title"><div className={styles.mapHeading}><div><span>05</span><h2 id="map-title">{labels.mapTitle}</h2></div><p>{labels.mapIntro}</p></div><DestinationPlacesRefresh destination={destination} token={publicToken} language={language} /></section>
     <section className={styles.utilitySection} aria-labelledby="accommodation-title"><div><span>06</span><h2 id="accommodation-title">{extra.accommodation}</h2><p>{extra.accommodationEmpty}</p></div><div className={styles.plan}><button className={styles.action} disabled aria-describedby="planning-hint">{extra.addToPlan}</button><p id="planning-hint">{extra.addToPlanHint}</p></div></section>
   </main>;
 }

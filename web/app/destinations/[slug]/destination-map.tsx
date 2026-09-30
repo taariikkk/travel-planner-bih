@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MapboxMap } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Destination, Place } from "./types";
-import { apiFetch } from "../../lib/api";
 import { text, type Language } from "../../lib/i18n";
-import { createClusteredPlaceSource, getMapBoundsCoordinates } from "./destination-map-data";
+import { createClusteredPlaceSource, getMapBoundsCoordinates, updatePlaceSource } from "./destination-map-data";
 import styles from "./destination.module.css";
 
 const PLACE_SOURCE = "destination-places";
@@ -14,10 +13,16 @@ const CLUSTER_LAYER = "place-clusters";
 const CLUSTER_COUNT_LAYER = "place-cluster-count";
 const PLACE_LAYER = "unclustered-places";
 
-export default function DestinationMap({ destination, token, language }: { destination: Destination; token: string | null; language: Language }) {
+export default function DestinationMap({ destination, token, language, places }: { destination: Destination; token: string | null; language: Language; places: Place[] }) {
   const labels = text[language].destination;
   const extra = text[language].destinationExtras;
   const container = useRef<HTMLDivElement>(null);
+  const latestPlaces = useRef(places);
+  const syncPlaces = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    latestPlaces.current = places;
+    syncPlaces.current?.();
+  }, [places]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
   const latitude = destination.latitude;
@@ -28,13 +33,8 @@ export default function DestinationMap({ destination, token, language }: { desti
     let disposed = false;
     let map: MapboxMap | undefined;
     const timeout = window.setTimeout(() => { if (!disposed) setStatus("error"); }, 40000);
-    Promise.all([
-      import("mapbox-gl"),
-      apiFetch(`/api/destinations/${encodeURIComponent(destination.slug)}/map-places`, { cache: "no-store" }),
-    ]).then(async ([{ default: mapboxgl }, response]) => {
+    import("mapbox-gl").then(({ default: mapboxgl }) => {
       if (disposed || !container.current) return;
-      if (!response.ok) throw new Error("Destination map places request failed");
-      const places = (await response.json()) as Place[];
       if (!mapboxgl.supported()) { setStatus("error"); return; }
       map = new mapboxgl.Map({ container: container.current, accessToken: token,
         style: "mapbox://styles/mapbox/outdoors-v12", center: [longitude, latitude],
@@ -59,10 +59,8 @@ export default function DestinationMap({ destination, token, language }: { desti
       map.on("load", () => {
         if (disposed || !map) return;
         map.addSource(PLACE_SOURCE, {
-          ...createClusteredPlaceSource(places),
-          ...(places.some((place) => place.metadata?.externalId)
-            ? { attribution: `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">${extra.osmAttribution}</a>` }
-            : {}),
+          ...createClusteredPlaceSource([]),
+          attribution: `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">${extra.osmAttribution}</a>`,
         });
         map.addLayer({
           id: CLUSTER_LAYER, type: "circle", source: PLACE_SOURCE, filter: ["has", "point_count"],
@@ -109,17 +107,26 @@ export default function DestinationMap({ destination, token, language }: { desti
           map.on("mouseleave", layer, () => { if (map) map.getCanvas().style.cursor = ""; });
         }
 
-        const coordinates = getMapBoundsCoordinates({ latitude, longitude }, places);
-        if (coordinates.length > 1) {
-          const bounds = coordinates.reduce((value, coordinate) => value.extend(coordinate), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-          map.fitBounds(bounds, { padding: 65, maxZoom: 14, duration: 0 });
-        }
+        let fittedPlaces = false;
+        syncPlaces.current = () => {
+          if (disposed || !map) return;
+          const currentPlaces = latestPlaces.current;
+          const source = map.getSource(PLACE_SOURCE) as GeoJSONSource | undefined;
+          if (source) updatePlaceSource(source, currentPlaces);
+          const coordinates = getMapBoundsCoordinates({ latitude, longitude }, currentPlaces);
+          if (!fittedPlaces && coordinates.length > 1) {
+            fittedPlaces = true;
+            const bounds = coordinates.reduce((value, coordinate) => value.extend(coordinate), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+            map.fitBounds(bounds, { padding: 65, maxZoom: 14, duration: 0 });
+          }
+        };
+        syncPlaces.current();
         window.clearTimeout(timeout);
         setStatus("ready");
       });
       map.on("error", () => { if (!disposed) setStatus("error"); });
     }).catch(() => { if (!disposed) setStatus("error"); });
-    return () => { disposed = true; window.clearTimeout(timeout); map?.remove(); };
+    return () => { disposed = true; syncPlaces.current = null; window.clearTimeout(timeout); map?.remove(); };
   }, [attempt, destination.id, destination.name, destination.slug, extra.categories, extra.osmAttribution, labels.mapDestination, latitude, longitude, token]);
 
   return <div className={styles.mapGrid}>
