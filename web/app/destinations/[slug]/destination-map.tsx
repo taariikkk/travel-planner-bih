@@ -69,7 +69,7 @@ export default function DestinationMap({ destination, token, language, places, s
         map.addLayer({
           id: CLUSTER_LAYER, type: "circle", source: PLACE_SOURCE, filter: ["has", "point_count"],
           paint: {
-            "circle-color": "#086b59", "circle-stroke-color": "#f5f2eb", "circle-stroke-width": 3,
+            "circle-color": "#1f4d3a", "circle-stroke-color": "#f5f0e6", "circle-stroke-width": 3,
             "circle-radius": ["step", ["get", "point_count"], 18, 10, 23, 30, 29],
           },
         });
@@ -80,7 +80,7 @@ export default function DestinationMap({ destination, token, language, places, s
         });
         map.addLayer({
           id: PLACE_LAYER, type: "circle", source: PLACE_SOURCE, filter: ["!", ["has", "point_count"]],
-          paint: { "circle-color": "#f5f2eb", "circle-radius": 8, "circle-stroke-color": "#086b59", "circle-stroke-width": 3 },
+          paint: { "circle-color": "#f5f0e6", "circle-radius": 8, "circle-stroke-color": "#1f4d3a", "circle-stroke-width": 3 },
         });
 
         map.on("click", CLUSTER_LAYER, (event) => {
@@ -142,8 +142,8 @@ export default function DestinationMap({ destination, token, language, places, s
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
     map.setPaintProperty(PLACE_LAYER, "circle-color", selectedPlaceId
-      ? ["case", ["==", ["get", "id"], selectedPlaceId], "#086b59", "#f5f2eb"]
-      : "#f5f2eb");
+      ? ["case", ["==", ["get", "id"], selectedPlaceId], "#1f4d3a", "#f5f0e6"]
+      : "#f5f0e6");
     map.setPaintProperty(PLACE_LAYER, "circle-radius", selectedPlaceId
       ? ["case", ["==", ["get", "id"], selectedPlaceId], 11, 8]
       : 8);

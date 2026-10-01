@@ -22,7 +22,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <LanguageProvider language={language}>
           <AuthProvider>
-            <Suspense fallback={<div className="min-h-screen bg-[#f5f2eb]" />}><AppShell>{children}</AppShell></Suspense>
+            <Suspense fallback={<div className="min-h-screen bg-background" />}><AppShell>{children}</AppShell></Suspense>
           </AuthProvider>
         </LanguageProvider>
       </body>

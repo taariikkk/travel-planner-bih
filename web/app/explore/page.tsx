@@ -79,7 +79,7 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
         {result.items.map((destination, index) => <li key={destination.id} className={styles.result}>
           <span className={styles.rank}>{String(index + 1).padStart(2, "0")}</span>
           <figure className={styles.figure}>
-            {destination.imageUrl ? <Image src={destination.imageUrl} alt={labels.imageAlt(destination.name)} fill unoptimized sizes="(max-width: 700px) 88vw, 240px" className={styles.image} /> : <div className={styles.imageFallback} aria-hidden="true">↗</div>}
+            {destination.imageUrl ? <Image src={destination.imageUrl} alt={labels.imageAlt(destination.name)} fill unoptimized sizes="(max-width: 640px) 88vw, (max-width: 1200px) 42vw, 28vw" className={styles.image} /> : <div className={styles.imageFallback} aria-hidden="true">↗</div>}
             {destination.imageAttribution ? <figcaption>{labels.photo}: <a href={destination.imageAttribution.url} target="_blank" rel="noreferrer">{destination.imageAttribution.author} · {destination.imageAttribution.license}</a></figcaption> : null}
           </figure>
           <div className={styles.copy}>

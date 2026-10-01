@@ -41,7 +41,7 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
     <div className={styles.primaryGrid}>
       <section className={styles.hero} aria-labelledby="destination-title">
         <figure className={styles.photo}>
-          {destination.imageUrl ? <Image src={destination.imageUrl} alt={extra.destinationPhotoAlt(destination.name)} fill unoptimized sizes="(max-width: 900px) 88vw, 38vw" className={styles.image} /> : <div className={styles.imageFallback} role="img" aria-label={extra.imageFallback}><svg width="72" height="72" viewBox="0 0 80 80" fill="none" aria-hidden="true"><path d="m10 58 22-35 13 21 9-14 16 28M23 58c10-12 21 12 35 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg><span>{extra.imageFallback}</span></div>}
+          {destination.imageUrl ? <Image src={destination.imageUrl} alt={extra.destinationPhotoAlt(destination.name)} fill unoptimized sizes="(max-width: 700px) 88vw, 50vw" className={styles.image} /> : <div className={styles.imageFallback} role="img" aria-label={extra.imageFallback}><svg width="72" height="72" viewBox="0 0 80 80" fill="none" aria-hidden="true"><path d="m10 58 22-35 13 21 9-14 16 28M23 58c10-12 21 12 35 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg><span>{extra.imageFallback}</span></div>}
           {destination.imageAttribution ? <figcaption><span>{extra.attribution}: {destination.imageAttribution.author} · {destination.imageAttribution.license}</span><a href={destination.imageAttribution.url} target="_blank" rel="noreferrer">↗</a></figcaption> : null}
         </figure>
         <div className={styles.heroCopy}>
