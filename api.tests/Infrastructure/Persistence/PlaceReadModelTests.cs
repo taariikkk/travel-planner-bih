@@ -59,7 +59,7 @@ public sealed class PlaceReadModelTests
             Address = "Address", Cuisine = "local", PriceLevel = "budget", Website = "https://example.org",
             Phone = "123", Email = "test@example.org", Source = "osm", ExternalId = "node/123",
             SourceUrl = "https://openstreetmap.org/node/123", ImportedAt = DateTimeOffset.UnixEpoch,
-            LastVerifiedAt = DateTimeOffset.UnixEpoch.AddDays(1)
+            LastVerifiedAt = DateTimeOffset.UnixEpoch.AddDays(1), DistanceMeters = 1234
         };
         var expectedMetadata = new PlaceMetadataResponse("Opis", "Description", "Original", "und",
             "Address", "local", "budget", "https://example.org", "123", "test@example.org", "osm",
@@ -70,6 +70,7 @@ public sealed class PlaceReadModelTests
         });
         var details = model.ToDetailsResponse();
         var map = model.ToMapResponse();
+        var mapWithDistance = model.ToMapResponse(includeDistance: true);
         Assert.Equal(expectedMetadata, details.Metadata);
         Assert.Equal(expectedMetadata, map.Metadata);
         Assert.Equal(expectedImage, details.ImageAttribution);
@@ -78,6 +79,8 @@ public sealed class PlaceReadModelTests
         Assert.Equal(details.ImageUrl, map.ImageUrl);
         Assert.Equal(43, map.Latitude);
         Assert.Equal(18, map.Longitude);
+        Assert.Null(map.DistanceKm);
+        Assert.Equal(1.234, mapWithDistance.DistanceKm);
     }
 
     private static ApplicationDbContext Context() => new(new DbContextOptionsBuilder<ApplicationDbContext>()

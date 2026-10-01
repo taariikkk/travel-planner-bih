@@ -13,12 +13,15 @@ const CLUSTER_LAYER = "place-clusters";
 const CLUSTER_COUNT_LAYER = "place-cluster-count";
 const PLACE_LAYER = "unclustered-places";
 
-export default function DestinationMap({ destination, token, language, places }: { destination: Destination; token: string | null; language: Language; places: Place[] }) {
+export default function DestinationMap({ destination, token, language, places, selectedPlaceId = null, onPlaceSelect, explorer = false }: { destination: Destination; token: string | null; language: Language; places: Place[]; selectedPlaceId?: string | null; onPlaceSelect?: (placeId: string) => void; explorer?: boolean }) {
   const labels = text[language].destination;
   const extra = text[language].destinationExtras;
   const container = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
+  const onPlaceSelectRef = useRef(onPlaceSelect);
   const latestPlaces = useRef(places);
   const syncPlaces = useRef<(() => void) | null>(null);
+  useEffect(() => { onPlaceSelectRef.current = onPlaceSelect; }, [onPlaceSelect]);
   useEffect(() => {
     latestPlaces.current = places;
     syncPlaces.current?.();
@@ -39,6 +42,7 @@ export default function DestinationMap({ destination, token, language, places }:
       map = new mapboxgl.Map({ container: container.current, accessToken: token,
         style: "mapbox://styles/mapbox/outdoors-v12", center: [longitude, latitude],
         zoom: 13, cooperativeGestures: true });
+      mapRef.current = map;
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
       const destinationButton = document.createElement("button");
@@ -92,6 +96,8 @@ export default function DestinationMap({ destination, token, language, places }:
         map.on("click", PLACE_LAYER, (event) => {
           const feature = event.features?.[0]?.toJSON();
           if (!map || !feature || feature.geometry.type !== "Point") return;
+          const placeId = String(feature.properties?.id ?? "");
+          if (placeId) onPlaceSelectRef.current?.(placeId);
           const popup = document.createElement("div");
           popup.className = styles.mapPopup;
           const name = document.createElement("strong");
@@ -108,14 +114,17 @@ export default function DestinationMap({ destination, token, language, places }:
         }
 
         let fittedPlaces = false;
+        let fittedSignature = "";
         syncPlaces.current = () => {
           if (disposed || !map) return;
           const currentPlaces = latestPlaces.current;
           const source = map.getSource(PLACE_SOURCE) as GeoJSONSource | undefined;
           if (source) updatePlaceSource(source, currentPlaces);
           const coordinates = getMapBoundsCoordinates({ latitude, longitude }, currentPlaces);
-          if (!fittedPlaces && coordinates.length > 1) {
+          const signature = currentPlaces.map((place) => place.id).join("|");
+          if ((!fittedPlaces || explorer && signature !== fittedSignature) && coordinates.length > 1) {
             fittedPlaces = true;
+            fittedSignature = signature;
             const bounds = coordinates.reduce((value, coordinate) => value.extend(coordinate), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
             map.fitBounds(bounds, { padding: 65, maxZoom: 14, duration: 0 });
           }
@@ -126,18 +135,31 @@ export default function DestinationMap({ destination, token, language, places }:
       });
       map.on("error", () => { if (!disposed) setStatus("error"); });
     }).catch(() => { if (!disposed) setStatus("error"); });
-    return () => { disposed = true; syncPlaces.current = null; window.clearTimeout(timeout); map?.remove(); };
-  }, [attempt, destination.id, destination.name, destination.slug, extra.categories, extra.osmAttribution, labels.mapDestination, latitude, longitude, token]);
+    return () => { disposed = true; syncPlaces.current = null; mapRef.current = null; window.clearTimeout(timeout); map?.remove(); };
+  }, [attempt, destination.id, destination.name, destination.slug, extra.categories, extra.osmAttribution, labels.mapDestination, explorer, latitude, longitude, token]);
 
-  return <div className={styles.mapGrid}>
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    map.setPaintProperty(PLACE_LAYER, "circle-color", selectedPlaceId
+      ? ["case", ["==", ["get", "id"], selectedPlaceId], "#086b59", "#f5f2eb"]
+      : "#f5f2eb");
+    map.setPaintProperty(PLACE_LAYER, "circle-radius", selectedPlaceId
+      ? ["case", ["==", ["get", "id"], selectedPlaceId], 11, 8]
+      : 8);
+    const selected = places.find((place) => place.id === selectedPlaceId);
+    if (selected) map.easeTo({ center: [selected.longitude, selected.latitude], zoom: Math.max(map.getZoom(), 14), duration: 500 });
+  }, [places, selectedPlaceId, status]);
+
+  return <div className={`${styles.mapGrid} ${explorer ? styles.explorerMapGrid : ""}`}>
     <div>
-      <div className={styles.mapWrap}>
-        <div ref={container} className={styles.map} role="region" aria-label={language === "en" ? `Map of ${destination.name}` : `Mapa destinacije ${destination.name}`} />
+      <div className={`${styles.mapWrap} ${explorer ? styles.explorerMapWrap : ""}`}>
+        <div ref={container} className={`${styles.map} ${explorer ? styles.explorerMap : ""}`} role="region" aria-label={language === "en" ? `Map of ${destination.name}` : `Mapa destinacije ${destination.name}`} />
         {(!token || status !== "ready") && <div className={styles.mapStatus} role="status">
           {!hasCoordinates ? <p>{extra.mapCoordinatesEmpty}</p> : !token || status === "error" ? <><p>{labels.mapUnavailable}</p><p>{labels.mapFallback}</p>{token && <button onClick={() => { setStatus("loading"); setAttempt(value => value + 1); }}>{labels.retry}</button>}</> : <p>{labels.mapLoading}</p>}
         </div>}
       </div>
-      <p className={styles.legend}><span className={styles.legendDestination} /> {labels.mapDestination} <span className={styles.legendPlace} /> {labels.nearby}</p>
+      {!explorer ? <p className={styles.legend}><span className={styles.legendDestination} /> {labels.mapDestination} <span className={styles.legendPlace} /> {labels.nearby}</p> : null}
     </div>
   </div>;
 }

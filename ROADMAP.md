@@ -175,18 +175,18 @@ Ovo je zaseban podatkovni sloj od Mapboxa: Overpass popunjava `Place`
 tabelu stvarnim podacima, Mapbox samo prikazuje ono što je već u bazi.
 Mapbox rezultati geocodinga se ne pohranjuju u bazu.
 
-- [ ] Proširenje `Place` (nova migracija): opis, adresa, vrsta kuhinje, cjenovni nivo,
+- [x] Proširenje `Place` (nova migracija): opis, adresa, vrsta kuhinje, cjenovni nivo,
       web/kontakt link, `ExternalId` (OSM id), datum zadnje provjere, opciona slika
       sa atribucijom (autor, licenca, URL)
-- [ ] `IPlacesProvider` interfejs (provider abstraction pattern)
-- [ ] `OverpassPlacesProvider` implementacija — upit za restorane/atrakcije po gradu
-- [ ] Keširanje Overpass odgovora u bazi (izbjeći ponovljene pozive za istu
+- [x] `IPlacesProvider` interfejs (provider abstraction pattern)
+- [x] `OverpassPlacesProvider` implementacija — upit za restorane/atrakcije po gradu
+- [x] Keširanje Overpass odgovora u bazi (izbjeći ponovljene pozive za istu
       destinaciju — Overpass javni server ima rate limit)
-- [ ] Fallback na alternativni Overpass mirror (npr. `overpass.kumi.systems`)
+- [x] Fallback na alternativni Overpass mirror (npr. `overpass.kumi.systems`)
       ako glavni endpoint ne odgovori — opciono, ne blokira MVP
-- [ ] Povezivanje ručnog zapisa sa OSM zapisom preko `ExternalId`: ručni zapis
+- [x] Povezivanje ručnog zapisa sa OSM zapisom preko `ExternalId`: ručni zapis
       nadjačava uvezeni, bez duplikata
-- [ ] JSON seeder za ručne lokacije (`manual-places.json`): idempotentan, validira
+- [x] JSON seeder za ručne lokacije (`manual-places.json`): idempotentan, validira
       ulaz i učitava zapise sa `Source = manual`; podaci žive u JSON fajlu, ne u C# kodu
 
 ### Ručni sadržaj (radiš ti, ne Codex)

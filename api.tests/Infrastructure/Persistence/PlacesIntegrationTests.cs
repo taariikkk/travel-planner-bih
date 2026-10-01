@@ -233,6 +233,24 @@ public sealed class PlacesIntegrationTests
     [InlineData("[{\"key\":\"x\",\"destinations\":[\"mostar\"],\"fields\":{\"unknown\":\"bad\"}}]")]
     public void Seeder_rejects_invalid_data(string json) => Assert.Throws<ValidationException>(() => ManualPlacesSeeder.Parse(json));
 
+    [Theory]
+    [InlineData("restaurant")]
+    [InlineData("cafe")]
+    [InlineData("attraction")]
+    [InlineData("museum")]
+    [InlineData("viewpoint")]
+    [InlineData("historic")]
+    [InlineData("gallery")]
+    [InlineData("zoo")]
+    [InlineData("peak")]
+    [InlineData("waterfall")]
+    [InlineData("cave")]
+    public void Seeder_accepts_supported_place_categories(string category)
+    {
+        var result = ManualPlacesSeeder.Parse(Seed("category", new { name = "Place", category, location = new { latitude = 43, longitude = 18 } }));
+        Assert.Equal(category, result[0].Fields["category"].GetString());
+    }
+
     private static string Seed(string key, object fields, string externalId = "node/123") =>
         JsonSerializer.Serialize(new[] { new { key, destinations = new[] { "mostar" }, externalId, fields } });
     private static PlacesImportLease Lease(string signature) => new(Guid.NewGuid(), signature);

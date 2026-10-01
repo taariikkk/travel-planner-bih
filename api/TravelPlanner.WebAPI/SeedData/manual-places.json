@@ -1,1 +1,602 @@
-[]
+[
+  {
+    "key": "sarajevo-nune-001",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Ćevabdžinica Nune",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8584206,
+        "longitude": 18.4230477
+      },
+      "descriptionBs": "Tradicionalna sarajevska ćevabdžinica u Ferhadiji, poznata po ćevapima, sudžukicama i drugim jelima sa roštilja.",
+      "descriptionEn": "A traditional Sarajevo ćevapi restaurant on Ferhadija Street, serving ćevapi, grilled sausages and other barbecue specialties.",
+      "address": "Ferhadija 12, 71000 Sarajevo",
+      "cuisine": "bosanska, roštilj",
+      "priceLevel": "budget",
+      "website": "https://nune.ba",
+      "phone": "+387 33 212 946",
+      "email": "edin.ogresevic@yahoo.com"
+    }
+  },
+  {
+    "key": "sarajevo-dveri-002",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Dveri",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8595732,
+        "longitude": 18.4304345
+      },
+      "descriptionBs": "Mali restoran u srcu Baščaršije sa ponudom bosanske i evropske kuhinje u tradicionalnom ambijentu.",
+      "descriptionEn": "A small restaurant in the heart of Baščaršija offering Bosnian and European dishes in a traditional setting.",
+      "address": "Prote Bakovića 12, 71000 Sarajevo",
+      "cuisine": "bosanska, evropska",
+      "priceLevel": "standard",
+      "website": "https://dveri.co.ba",
+      "phone": "+387 33 537 020",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-reuff-003",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Restaurant REUFF",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8414839,
+        "longitude": 18.3380914
+      },
+      "descriptionBs": "Restoran sa širokom ponudom bosanske, italijanske i internacionalne kuhinje, uključujući pizze iz krušne peći.",
+      "descriptionEn": "A restaurant offering Bosnian, Italian and international cuisine, including wood-fired pizza.",
+      "address": "Aleja Bosne Srebrene 24, 71000 Sarajevo",
+      "cuisine": "bosanska, italijanska, internacionalna",
+      "priceLevel": "standard",
+      "website": "https://reuffrestoran.com/",
+      "phone": "+387 33 545 534",
+      "email": "restoranreuff9@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-burgrs-004",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "burgrs Sarajevo",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8537600,
+        "longitude": 18.3725121
+      },
+      "descriptionBs": "Specijalizovani burger restoran sa smash burgerima od goveđeg mesa, pomfritom i različitim umacima.",
+      "descriptionEn": "A burger restaurant specializing in beef smash burgers, fries and a selection of house sauces.",
+      "address": "Džemala Bijedića 42B, 71000 Sarajevo",
+      "cuisine": "američka, burgeri",
+      "priceLevel": "budget",
+      "website": "https://burgrs.com",
+      "phone": "+387 33 743 549",
+      "email": "contact@burgrs.com"
+    }
+  },
+  {
+    "key": "sarajevo-klopa-005",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Klopa",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8590003,
+        "longitude": 18.4252219
+      },
+      "descriptionBs": "Restoran u centru Sarajeva sa kombinacijom bosanske i internacionalne kuhinje te mesnih, ribljih i vegetarijanskih jela.",
+      "descriptionEn": "A central Sarajevo restaurant combining Bosnian and international cuisine with meat, seafood and vegetarian dishes.",
+      "address": "Trg Fra Grge Martića 4, 71000 Sarajevo",
+      "cuisine": "bosanska, internacionalna",
+      "priceLevel": "standard",
+      "website": "https://restoranklopa.ba",
+      "phone": "+387 33 223 633",
+      "email": "info@klopa.ba"
+    }
+  },
+  {
+    "key": "sarajevo-careva-cuprija-006",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Restoran Careva Ćuprija",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8585695,
+        "longitude": 18.4298001
+      },
+      "descriptionBs": "Restoran na Baščaršiji sa tradicionalnim bosanskim, kontinentalnim i mediteranskim specijalitetima.",
+      "descriptionEn": "A Baščaršija restaurant serving traditional Bosnian, continental and Mediterranean specialties.",
+      "address": "Kundurdžiluk 10, 71000 Sarajevo",
+      "cuisine": "bosanska, mediteranska, internacionalna",
+      "priceLevel": "standard",
+      "website": "https://restoran-carevacuprija.ba",
+      "phone": "+387 33 536 661",
+      "email": "info@restoran-carevacuprija.ba"
+    }
+  },
+  {
+    "key": "sarajevo-petica-ferhatovic-007",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Ćevabdžinica Petica Ferhatović",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8590008,
+        "longitude": 18.4321886
+      },
+      "descriptionBs": "Tradicionalna ćevabdžinica porodice Ferhatović na Baščaršiji sa ćevapima, pljeskavicama i sudžukicama.",
+      "descriptionEn": "A traditional Ferhatović family ćevapi restaurant in Baščaršija serving ćevapi, pljeskavica and grilled sausages.",
+      "address": "Bravadžiluk 21, 71000 Sarajevo",
+      "cuisine": "bosanska, roštilj",
+      "priceLevel": "budget",
+      "website": "https://www.petica.ba",
+      "phone": "+387 33 537 555",
+      "email": "nidalferhatovic@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-zeljo-008",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Ćevabdžinica Željo",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8585869,
+        "longitude": 18.430177
+      },
+      "descriptionBs": "Jedna od poznatih sarajevskih ćevabdžinica na Baščaršiji, specijalizovana za ćevape u somunu.",
+      "descriptionEn": "A well-known Sarajevo ćevapi restaurant in Baščaršija specializing in ćevapi served in traditional flatbread.",
+      "address": "Kundurdžiluk 19, 71000 Sarajevo",
+      "cuisine": "bosanska, roštilj",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 33 447 000",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-buregdzinica-bosna-009",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Buregdžinica Bosna",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8590423,
+        "longitude": 18.4316187
+      },
+      "descriptionBs": "Tradicionalna buregdžinica u Bravadžiluku sa burekom i drugim vrstama svježe pripremljenih bosanskih pita.",
+      "descriptionEn": "A traditional burek shop on Bravadžiluk Street serving burek and other freshly prepared Bosnian pies.",
+      "address": "Bravadžiluk 11, 71000 Sarajevo",
+      "cuisine": "bosanska, pite",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 33 538 426",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-cakum-pakum-010",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Cakum-Pakum",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.85964,
+        "longitude": 18.42194
+      },
+      "descriptionBs": "Manji restoran u centru Sarajeva sa italijanskim i mediteranskim jelima, uključujući tjestenine i mesna jela.",
+      "descriptionEn": "A small central Sarajevo restaurant serving Italian and Mediterranean dishes including pasta and meat dishes.",
+      "address": "Kaptol 10, 71000 Sarajevo",
+      "cuisine": "italijanska, mediteranska",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 61 955 310",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-four-rooms-safija-011",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "The Four Rooms of Mrs. Safija",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8641218,
+        "longitude": 18.4148777
+      },
+      "descriptionBs": "Restoran u historijskoj kući na Čekaluši koji kombinuje internacionalnu, francusku i fusion gastronomiju sa vinskim i lounge prostorom.",
+      "descriptionEn": "A restaurant in a historic Čekaluša house combining international, French and fusion cuisine with wine and lounge areas.",
+      "address": "Čekaluša 61, 71000 Sarajevo",
+      "cuisine": "internacionalna, francuska, fusion",
+      "priceLevel": "premium",
+      "website": "http://www.4sgs.net",
+      "phone": "+387 33 202 745",
+      "email": "info@4sgs.net"
+    }
+  },
+  {
+    "key": "sarajevo-peksar-012",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "PekSar",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8583306,
+        "longitude": 18.4282782
+      },
+      "descriptionBs": "Restoran i coffee shop u centru Sarajeva koji spaja pekarske proizvode sa modernom internacionalnom i evropskom gastronomijom.",
+      "descriptionEn": "A central Sarajevo restaurant and coffee shop combining bakery products with modern international and European cuisine.",
+      "address": "Zelenih beretki 28, 71000 Sarajevo",
+      "cuisine": "internacionalna, evropska",
+      "priceLevel": "standard",
+      "website": "https://peksar.ba",
+      "phone": "+387 62 530 555",
+      "email": "peksar.bakery@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-falafel-013",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Falafel Restaurant",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.859604337406694,
+        "longitude": 18.429913578814734
+      },
+      "descriptionBs": "Vegetarijanski restoran na Baščaršiji fokusiran na falafel, hummus i druga mediteranska i bliskoistočna jela.",
+      "descriptionEn": "A vegetarian restaurant in Baščaršija focused on falafel, hummus and other Mediterranean and Middle Eastern dishes.",
+      "address": "Đulagina čikma 2, 71000 Sarajevo",
+      "cuisine": "mediteranska, bliskoistočna, vegetarijanska",
+      "priceLevel": "budget",
+      "website": "https://falafel.ba",
+      "phone": "+387 33 233 200",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-buregdzinica-sac-014",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Buregdžinica Sač",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8588267,
+        "longitude": 18.4312981
+      },
+      "descriptionBs": "Buregdžinica na Baščaršiji specijalizovana za tradicionalne bosanske pite pripremljene i pečene pod sačem.",
+      "descriptionEn": "A Baščaršija burek shop specializing in traditional Bosnian pies prepared and baked under a sač.",
+      "address": "Bravadžiluk mali 2, 71000 Sarajevo",
+      "cuisine": "bosanska, pite",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 33 239 748",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-avlija-015",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Avlija Sarajevo",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8636263,
+        "longitude": 18.4160005
+      },
+      "descriptionBs": "Restoran prepoznatljiv po ambijentu tradicionalne bosanske avlije i ponudi domaćih i internacionalnih jela.",
+      "descriptionEn": "A restaurant characterized by a traditional Bosnian courtyard atmosphere and a selection of local and international dishes.",
+      "address": "Avde Sumbula 2, 71000 Sarajevo",
+      "cuisine": "bosanska, internacionalna",
+      "priceLevel": "standard",
+      "website": null,
+      "phone": "+387 62 699 409",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-kibe-mahala-016",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Kibe Mahala",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.87149935226418,
+        "longitude": 18.42784376396975
+      },
+      "descriptionBs": "Tradicionalni bosanski restoran na padinama iznad Sarajeva, poznat po nacionalnim jelima, janjetini sa ražnja i panoramskom pogledu.",
+      "descriptionEn": "A traditional Bosnian restaurant on the hills above Sarajevo, serving national dishes and spit-roasted lamb with panoramic city views.",
+      "address": "Vrbanjuša 106, 71000 Sarajevo",
+      "cuisine": "bosanska",
+      "priceLevel": "premium",
+      "website": "https://kibemahala.ba",
+      "phone": "+387 61 040 000",
+      "email": "info@kibemahala.ba"
+    }
+  },
+  {
+    "key": "sarajevo-food-station-ilidza-017",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Food Station",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.83000178733975,
+        "longitude": 18.30739080758693
+      },
+      "descriptionBs": "Fast-food restoran na Ilidži sa burgerima, pizzama, jelima sa roštilja i drugim brzim obrocima.",
+      "descriptionEn": "A fast-food restaurant in Ilidža serving burgers, pizza, grilled dishes and other quick meals.",
+      "address": "Mala aleja 33, 71210 Ilidža",
+      "cuisine": "fast food, burgeri, pizza, roštilj",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 62 555 776",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-mala-kuhinja-018",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Mala Kuhinja",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.861024,
+        "longitude": 18.417922
+      },
+      "descriptionBs": "Intimni sarajevski restoran sa kreativnim pristupom internacionalnoj i fusion kuhinji.",
+      "descriptionEn": "An intimate Sarajevo restaurant with a creative approach to international and fusion cuisine.",
+      "address": "Tina Ujevića 13, 71000 Sarajevo",
+      "cuisine": "fusion, internacionalna",
+      "priceLevel": "standard",
+      "website": "http://www.malakuhinja.ba",
+      "phone": "+387 33 841 076",
+      "email": "info@malakuhinja.ba"
+    }
+  },
+  {
+    "key": "sarajevo-libertas-019",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Restoran Libertas",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.86077746842613,
+        "longitude": 18.428058423790667
+      },
+      "descriptionBs": "Mediteranski restoran u centru Sarajeva specijalizovan za svježu ribu, plodove mora, dalmatinska jela i vina.",
+      "descriptionEn": "A Mediterranean restaurant in central Sarajevo specializing in fresh fish, seafood, Dalmatian dishes and wine.",
+      "address": "Logavina 9, 71000 Sarajevo",
+      "cuisine": "mediteranska, morski plodovi, dalmatinska",
+      "priceLevel": "premium",
+      "website": "https://libertas.ba",
+      "phone": "+387 33 447 830",
+      "email": "info@libertas.ba"
+    }
+  },
+  {
+    "key": "sarajevo-sedef-020",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Sedef",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.85894993828211,
+        "longitude": 18.425907128090607
+      },
+      "descriptionBs": "Restoran u Ferhadiji sa bosanskim specijalitetima kao što su bosanski lonac, dolme, sitni ćevap i kuhana jela.",
+      "descriptionEn": "A Ferhadija restaurant serving Bosnian specialties such as Bosnian pot, dolma, sitni ćevap and traditional cooked dishes.",
+      "address": "Ferhadija 16, 71000 Sarajevo",
+      "cuisine": "bosanska, istočnoevropska",
+      "priceLevel": "standard",
+      "website": null,
+      "phone": "+387 33 200 588",
+      "email": "kurtagickasim0@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-konoba-luka-021",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Konoba Luka Sarajevo",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8559778,
+        "longitude": 18.4186327
+      },
+      "descriptionBs": "Mediteranski restoran uz Miljacku specijalizovan za svježu ribu, škampe, hobotnicu i druge morske plodove.",
+      "descriptionEn": "A Mediterranean restaurant by the Miljacka specializing in fresh fish, prawns, octopus and other seafood.",
+      "address": "Obala Maka Dizdara 8, 71000 Sarajevo",
+      "cuisine": "mediteranska, morski plodovi",
+      "priceLevel": "premium",
+      "website": "https://konobalukasarajevo.ba",
+      "phone": "+387 33 209 303",
+      "email": "mak.ljubas@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-casa-el-gitano-022",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Casa El Gitano",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8548386,
+        "longitude": 18.3806312
+      },
+      "descriptionBs": "Porodični restoran na Paromlinskoj sa ponudom italijanske, španske i domaće kuhinje te jelima sa roštilja.",
+      "descriptionEn": "A family restaurant on Paromlinska Street offering Italian, Spanish and local cuisine alongside grilled dishes.",
+      "address": "Paromlinska 34, 71000 Sarajevo",
+      "cuisine": "italijanska, španska, internacionalna",
+      "priceLevel": "budget",
+      "website": "https://casaelgitano.com",
+      "phone": "+387 33 950 753",
+      "email": "casaelgitano@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-da-zero-pizza-023",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Da Zero Pizza",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.84797783179396,
+        "longitude": 18.377806948100307
+      },
+      "descriptionBs": "Pizzeria specijalizovana za napolitanski stil pizze sa klasičnim i modernim kombinacijama sastojaka.",
+      "descriptionEn": "A pizzeria specializing in Neapolitan-style pizza with both classic and modern topping combinations.",
+      "address": "R9XH+44F, Azize Šaćirbegović, 71000 Sarajevo",
+      "cuisine": "italijanska, pizza",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 61 038 066",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-frankies-024",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Frankie's street food Sarajevo",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.859187374257935,
+        "longitude": 18.42358187087137
+      },
+      "descriptionBs": "Street-food restoran u centru Sarajeva sa burgerima, tacosima i drugim savremenim jelima brze hrane.",
+      "descriptionEn": "A central Sarajevo street-food restaurant serving burgers, tacos and other contemporary fast-food dishes.",
+      "address": "Gajev trg 4, 71000 Sarajevo",
+      "cuisine": "street food, burgeri, meksička",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 61 725 544",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-tavola-025",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Restoran Tavola",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.8584513,
+        "longitude": 18.4199646
+      },
+      "descriptionBs": "Italijanski i mediteranski restoran u centru Sarajeva poznat po domaćoj tjestenini, raviolima, njokama, steakovima i morskim plodovima.",
+      "descriptionEn": "An Italian and Mediterranean restaurant in central Sarajevo serving homemade pasta, ravioli, gnocchi, steaks and seafood.",
+      "address": "Maršala Tita 50, 71000 Sarajevo",
+      "cuisine": "italijanska, mediteranska",
+      "priceLevel": "premium",
+      "website": "https://tavola.ba",
+      "phone": "+387 33 222 207",
+      "email": "info@tavola.ba"
+    }
+  },
+  {
+    "key": "sarajevo-tapas-bar-026",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Tapas Bar & Restaurant",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.85808223302761,
+        "longitude": 18.42737402435274
+      },
+      "descriptionBs": "Restoran u centru Sarajeva sa mediteranskim, italijanskim i španskim utjecajima te jelima pripremljenim u krušnoj peći.",
+      "descriptionEn": "A central Sarajevo restaurant with Mediterranean, Italian and Spanish influences and dishes prepared in a wood-fired oven.",
+      "address": "Hadžiristićeva bb, 71000 Sarajevo",
+      "cuisine": "mediteranska, italijanska, španska",
+      "priceLevel": "standard",
+      "website": "https://tapasbar.ba",
+      "phone": "+387 33 742 730",
+      "email": "info@tapasbar.ba"
+    }
+  },
+  {
+    "key": "sarajevo-fijaker-ilidza-027",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Fijaker Ilidža",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.82468,
+        "longitude": 18.30214
+      },
+      "descriptionBs": "Restoran na Ilidži sa tradicionalnim bosanskim jelima, mesnim specijalitetima i jelima sa roštilja.",
+      "descriptionEn": "An Ilidža restaurant serving traditional Bosnian dishes, meat specialties and grilled food.",
+      "address": "IV viteške brigade 46, 71210 Ilidža",
+      "cuisine": "bosanska, roštilj",
+      "priceLevel": "standard",
+      "website": null,
+      "phone": "+387 61 283 393",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-gazi-han-028",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Gazi-Han",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.83196859474572,
+        "longitude": 18.33015067437067
+      },
+      "descriptionBs": "Restoran na području Novog Grada sa ponudom tradicionalnih i internacionalnih jela za doručak i ručak.",
+      "descriptionEn": "A restaurant in the Novi Grad area serving traditional and international dishes for breakfast and lunch.",
+      "address": "Aleja Bosne Srebrene 121, 71000 Sarajevo",
+      "cuisine": "bosanska, internacionalna",
+      "priceLevel": "budget",
+      "website": null,
+      "phone": "+387 61 690 790",
+      "email": null
+    }
+  },
+  {
+    "key": "sarajevo-only-one-029",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Only One Chinese Restaurant",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.87551333314981,
+        "longitude": 18.411916335043497
+      },
+      "descriptionBs": "Kineski restoran na Koševu sa jelima tradicionalne kineske kuhinje, wok specijalitetima i vegetarijanskim opcijama.",
+      "descriptionEn": "A Chinese restaurant in the Koševo area serving traditional Chinese cuisine, wok dishes and vegetarian options.",
+      "address": "Patriotske lige 53, 71000 Sarajevo",
+      "cuisine": "kineska, azijska",
+      "priceLevel": "standard",
+      "website": null,
+      "phone": "+387 62 327 636",
+      "email": "066gaoliang@gmail.com"
+    }
+  },
+  {
+    "key": "sarajevo-kilim-ilidza-030",
+    "destinations": ["sarajevo"],
+    "fields": {
+      "name": "Kilim Ilidža",
+      "category": "restaurant",
+      "location": {
+        "latitude": 43.82892904651129,
+        "longitude": 18.30506268762972
+      },
+      "descriptionBs": "Kafe-restoran na Ilidži sa ponudom doručka, ručka, večere, deserata i različitih à la carte jela.",
+      "descriptionEn": "A café-restaurant in Ilidža serving breakfast, lunch, dinner, desserts and a varied à la carte menu.",
+      "address": "Hrasnička cesta 3, 71210 Ilidža",
+      "cuisine": "internacionalna, kafe restoran",
+      "priceLevel": "standard",
+      "website": "https://kilim.ba",
+      "phone": "+387 61 050 808",
+      "email": "info@kilim.ba"
+    }
+  }
+]

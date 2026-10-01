@@ -75,10 +75,11 @@ internal sealed class PlaceReadModel
             attribution is null ? null : ImageUrl, attribution, Metadata);
     }
 
-    internal DestinationMapPlaceResponse ToMapResponse()
+    internal DestinationMapPlaceResponse ToMapResponse(bool includeDistance = false)
     {
         var attribution = Attribution;
         return new(Id, Name, Category, Latitude, Longitude, Metadata,
-            attribution is null ? null : ImageUrl, attribution);
+            attribution is null ? null : ImageUrl, attribution,
+            includeDistance ? DistanceMeters / 1000 : null);
     }
 }

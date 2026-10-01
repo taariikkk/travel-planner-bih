@@ -100,6 +100,7 @@ public sealed class OverpassPlacesProvider(IHttpClientFactory clients, OverpassO
             area["ISO3166-1"="BA"]["admin_level"="2"]->.bih;
             (
               nwr["amenity"="restaurant"]["name"]{{around}};
+              nwr["amenity"="cafe"]["name"]{{around}};
               nwr["tourism"~"^(attraction|museum|viewpoint|gallery|zoo)$"]["name"]{{around}};
               nwr["historic"~"^(castle|ruins|monument|memorial)$"]["name"]{{around}};
               nwr["natural"~"^(peak|waterfall|cave_entrance)$"]["name"]{{around}};
@@ -130,10 +131,27 @@ public sealed class OverpassPlacesProvider(IHttpClientFactory clients, OverpassO
                 string? Tag(string name) => tags.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
                     && !string.IsNullOrWhiteSpace(value.GetString()) ? value.GetString()!.Trim() : null;
                 var name = Tag("name");
-                var category = Tag("amenity") == "restaurant" ? "restaurant"
-                    : Tag("tourism") is "attraction" or "museum" or "viewpoint" or "gallery" or "zoo"
-                    || Tag("historic") is "castle" or "ruins" or "monument" or "memorial"
-                    || Tag("natural") is "peak" or "waterfall" or "cave_entrance" ? "attraction" : null;
+                var category = Tag("amenity") switch
+                {
+                    "restaurant" => "restaurant",
+                    "cafe" => "cafe",
+                    _ => Tag("tourism") switch
+                    {
+                        "museum" => "museum",
+                        "viewpoint" => "viewpoint",
+                        "gallery" => "gallery",
+                        "zoo" => "zoo",
+                        "attraction" => "attraction",
+                        _ => Tag("historic") is "castle" or "ruins" or "monument" or "memorial" ? "historic"
+                            : Tag("natural") switch
+                            {
+                                "peak" => "peak",
+                                "waterfall" => "waterfall",
+                                "cave_entrance" => "cave",
+                                _ => null
+                            }
+                    }
+                };
                 var coords = typeNode.GetString() == "node" ? element : element.TryGetProperty("center", out var center) ? center : default;
                 if (name is null || category is null || coords.ValueKind != JsonValueKind.Object
                     || !coords.TryGetProperty("lat", out var lat) || !lat.TryGetDouble(out var latitude)

@@ -130,3 +130,19 @@ test("cleanup during JSON parsing ignores late data and aborts GET", async () =>
   assert.equal(signal.aborted, true);
   assert.deepEqual(states, []);
 });
+
+
+test("failed initial full fetch preserves the server-rendered preview", async () => {
+  const calls = [];
+  const states = [];
+  const initial = [place("server-preview")];
+  const coordinator = createPlacesCoordinator("sarajevo", (path, init) => new Promise((resolve, reject) => {
+    calls.push({ path, init, resolve, reject });
+  }), initial);
+  const stop = coordinator.mount(state => states.push(state), () => assert.fail("unexpected refresh"));
+  calls.find(call => call.init.method !== "POST").reject(new Error("Network failure"));
+  await tick();
+  assert.equal(states.at(-1).status, "error");
+  assert.equal(states.at(-1).places[0].id, "server-preview");
+  stop();
+});

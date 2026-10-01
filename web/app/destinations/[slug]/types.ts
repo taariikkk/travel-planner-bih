@@ -5,6 +5,7 @@ export type Place = { id: string; name: string; category: string; latitude: numb
     descriptionLanguage: string | null; address: string | null; cuisine: string | null; priceLevel: string | null;
     website: string | null; phone: string | null; email: string | null; source: string;
     externalId: string | null; sourceUrl: string | null; importedAt: string | null; lastVerifiedAt: string | null } | null;
+  distanceKm?: number | null;
 };
 export type Destination = {
   id: string; slug: string; name: string; region: string; description: string;

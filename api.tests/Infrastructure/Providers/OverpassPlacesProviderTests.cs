@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using TravelPlanner.Application.DTOs;
 using TravelPlanner.Application.Services;
@@ -18,6 +19,7 @@ public sealed class OverpassPlacesProviderTests
         Assert.Contains("\"ISO3166-1\"=\"BA\"", query);
         Assert.Contains("(around:10000,43.3,17.8)(area.bih)", query);
         Assert.Contains("nwr[\"amenity\"=\"restaurant\"]", query);
+        Assert.Contains("nwr[\"amenity\"=\"cafe\"]", query);
         Assert.Contains("cave_entrance", query);
         Assert.Contains("out center;", query);
     }
@@ -30,12 +32,13 @@ public sealed class OverpassPlacesProviderTests
               {"type":"node","id":1,"lat":43,"lon":18,"tags":{"name":"Restoran","amenity":"restaurant","tourism":"museum","description":"Original","description:bs":"Opis","description:en":"Description","addr:street":"Ulica","addr:housenumber":"2","addr:city":"Grad","cuisine":"regional","website":"javascript:bad","contact:website":"https://example.org","contact:phone":"123"}},
               {"type":"way","id":1,"center":{"lat":44,"lon":17},"tags":{"name":"Muzej","tourism":"museum"}},
               {"type":"relation","id":1,"center":{"lat":44,"lon":17},"tags":{"name":"Vrh","natural":"peak"}},
+              {"type":"node","id":2,"lat":43.5,"lon":18.5,"tags":{"name":"Kafić","amenity":"cafe"}},
               {"type":"node","id":4,"lat":91,"lon":18,"tags":{"name":"Bad","amenity":"restaurant"}},
               {"type":"node","id":5,"lat":43,"lon":18,"tags":{"amenity":"restaurant"}},
               {"type":"way","id":6,"tags":{"name":"No center","tourism":"museum"}}
             ]}
             """);
-        Assert.Equal(3, result.Places.Count);
+        Assert.Equal(4, result.Places.Count);
         Assert.Equal(3, result.SkippedCount);
         var node = result.Places[0];
         Assert.Equal("node/1", node.ExternalId);
@@ -47,7 +50,30 @@ public sealed class OverpassPlacesProviderTests
         Assert.Equal("https://example.org/", node.Website);
         Assert.Equal("123", node.Phone);
         Assert.Equal("way/1", result.Places[1].ExternalId);
+        Assert.Equal("museum", result.Places[1].Category);
         Assert.Equal("relation/1", result.Places[2].ExternalId);
+        Assert.Equal("peak", result.Places[2].Category);
+        Assert.Equal("cafe", result.Places[3].Category);
+    }
+
+
+    [Theory]
+    [InlineData("tourism", "attraction", "attraction")]
+    [InlineData("tourism", "viewpoint", "viewpoint")]
+    [InlineData("tourism", "gallery", "gallery")]
+    [InlineData("tourism", "zoo", "zoo")]
+    [InlineData("historic", "castle", "historic")]
+    [InlineData("natural", "waterfall", "waterfall")]
+    [InlineData("natural", "cave_entrance", "cave")]
+    public void Preserves_supported_osm_subcategories(string key, string value, string expected)
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            elements = new[] { new { type = "node", id = 1, lat = 43, lon = 18,
+                tags = new Dictionary<string, string> { ["name"] = "Place", [key] = value } } }
+        });
+        var result = OverpassPlacesProvider.Parse(json);
+        Assert.Equal(expected, Assert.Single(result.Places).Category);
     }
 
     [Theory]

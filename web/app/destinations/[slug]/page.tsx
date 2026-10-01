@@ -5,6 +5,8 @@ import { cookies } from "next/headers";
 import { apiFetch, getErrorMessage } from "../../lib/api";
 import { formatTag, getLanguage, LANGUAGE_COOKIE, text } from "../../lib/i18n";
 import DestinationPlacesRefresh from "./destination-places-refresh";
+import { DestinationPlacesProvider } from "./destination-places-context";
+import DestinationPlacesExplorer from "./destination-places-explorer";
 import DestinationFavoriteButton from "./destination-favorite-button";
 import { formatDestinationStatistics } from "./destination-statistics";
 import type { Destination } from "./types";
@@ -34,7 +36,7 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
   ];
   const hasDescription = destination.description.trim().length > 0;
 
-  return <main className={styles.page}>
+  return <DestinationPlacesProvider slug={destination.slug} initialPlaces={destination.places}><main className={styles.page}>
     <nav className={styles.breadcrumb} aria-label={labels.breadcrumb}><Link href="/">{labels.home}</Link><span aria-hidden="true">/</span><Link href="/explore">{labels.explore}</Link><span aria-hidden="true">/</span><span>{destination.name}</span></nav>
     <div className={styles.primaryGrid}>
       <section className={styles.hero} aria-labelledby="destination-title">
@@ -54,11 +56,11 @@ export default async function DestinationPage({ params }: { params: Promise<{ sl
         <section className={styles.detailSection} aria-labelledby="overview-title"><span>01</span><div><h2 id="overview-title">{extra.overview}</h2>{hasDescription ? <><p lang={destination.descriptionLanguage ?? language}>{destination.description}</p>{destination.descriptionAttribution ? <p className={styles.attribution}>{extra.descriptionAttribution}: <a href={destination.descriptionAttribution.url} target="_blank" rel="noreferrer">{destination.descriptionAttribution.license} ↗</a></p> : null}</> : <p>{extra.descriptionEmpty}</p>}</div></section>
         <section className={styles.detailSection} aria-labelledby="weather-title"><span>02</span><div><h2 id="weather-title">{extra.weather}</h2><p>{extra.weatherEmpty}</p></div></section>
         <section className={styles.detailSection} aria-labelledby="facts-title"><span>03</span><div><h2 id="facts-title">{extra.facts}</h2>{quickFacts.length ? <dl className={styles.quickFacts}>{quickFacts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl> : <p>{extra.factsEmpty}</p>}</div></section>
-        <section className={styles.detailSection} aria-labelledby="places-title"><span>04</span><div><h2 id="places-title">{extra.topPlaces}</h2>{destination.places.length ? <ul className={styles.topPlaces}>{destination.places.slice(0, 6).map((place) => <li key={place.id}>{place.imageUrl && place.imageAttribution ? <figure><Image src={place.imageUrl} alt="" width={76} height={76} unoptimized className={styles.placeImage} /><figcaption className={styles.attribution}><a href={place.imageAttribution.url} target="_blank" rel="noreferrer">{extra.attribution}: {place.imageAttribution.author} · {place.imageAttribution.license}</a></figcaption></figure> : null}<div><h3>{place.name}</h3><p>{(extra.categories as Record<string, string>)[place.category] ?? place.category}</p></div></li>)}</ul> : <p>{extra.topPlacesEmpty}</p>}{destination.places.some((place) => place.metadata?.externalId) ? <p className={styles.attribution}><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">{extra.osmAttribution}</a></p> : null}</div></section>
+        <section className={styles.detailSection} aria-labelledby="places-title"><span>04</span><DestinationPlacesExplorer destination={destination} token={publicToken} language={language} /></section>
       </div>
     </div>
 
     <section id="mapa" className={styles.mapSection} aria-labelledby="map-title"><div className={styles.mapHeading}><div><span>05</span><h2 id="map-title">{labels.mapTitle}</h2></div><p>{labels.mapIntro}</p></div><DestinationPlacesRefresh destination={destination} token={publicToken} language={language} /></section>
     <section className={styles.utilitySection} aria-labelledby="accommodation-title"><div><span>06</span><h2 id="accommodation-title">{extra.accommodation}</h2><p>{extra.accommodationEmpty}</p></div><div className={styles.plan}><button className={styles.action} disabled aria-describedby="planning-hint">{extra.addToPlan}</button><p id="planning-hint">{extra.addToPlanHint}</p></div></section>
-  </main>;
+  </main></DestinationPlacesProvider>;
 }

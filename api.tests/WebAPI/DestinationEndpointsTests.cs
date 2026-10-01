@@ -70,6 +70,7 @@ public sealed class DestinationEndpointsTests
         Assert.NotNull(places);
         Assert.Equal(80, places.Length);
         Assert.Equal("Mjesto 00", places[0].Name);
+        Assert.Equal(0.25, places[0].DistanceKm);
     }
 
     [Fact]
@@ -520,7 +521,7 @@ public sealed class DestinationEndpointsTests
             {
                 "sarajevo" => Enumerable.Range(0, 80).Select(index => new DestinationMapPlaceResponse(
                     Guid.NewGuid(), $"Mjesto {index:00}", index % 2 == 0 ? "attraction" : "restaurant",
-                    43.84 + index * 0.0001, 18.39 + index * 0.0001)).ToArray(),
+                    43.84 + index * 0.0001, 18.39 + index * 0.0001, DistanceKm: index + 0.25)).ToArray(),
                 "trebinje" => [],
                 _ => null
             };

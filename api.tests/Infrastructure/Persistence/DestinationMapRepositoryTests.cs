@@ -50,12 +50,15 @@ public sealed class DestinationMapRepositoryTests
 
         Assert.NotNull(result);
         Assert.Equal(80, result.Count);
-        Assert.Equal(places.Select(place => place.Id), result.Select(place => place.Id));
-        Assert.Null(result[0].ImageUrl);
-        Assert.Null(result[0].ImageAttribution);
-        Assert.Equal(new ImageAttributionResponse("Author", "CC0", "https://example.org/source"), result[1].ImageAttribution);
-        Assert.Equal(places[1].ImageUrl, result[1].ImageUrl);
-        Assert.Equal(PlaceMetadataResponse.From(places[1]), result[1].Metadata);
+        Assert.All(result, place => Assert.NotNull(place.DistanceKm));
+        Assert.Equal(result.OrderBy(place => place.DistanceKm).ThenBy(place => place.Name).ThenBy(place => place.Id), result);
+        var withoutAttribution = Assert.Single(result, place => place.Id == places[0].Id);
+        Assert.Null(withoutAttribution.ImageUrl);
+        Assert.Null(withoutAttribution.ImageAttribution);
+        var attributed = Assert.Single(result, place => place.Id == places[1].Id);
+        Assert.Equal(new ImageAttributionResponse("Author", "CC0", "https://example.org/source"), attributed.ImageAttribution);
+        Assert.Equal(places[1].ImageUrl, attributed.ImageUrl);
+        Assert.Equal(PlaceMetadataResponse.From(places[1]), attributed.Metadata);
         var details = await new DestinationDetailsRepository(context).GetBySlugAsync(destination.Slug, "bs", default);
         Assert.NotNull(details);
         Assert.Equal(6, details.Places.Count);

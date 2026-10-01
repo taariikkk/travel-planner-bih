@@ -54,14 +54,14 @@ type FetchPlaces = (path: string, init: RequestInit) => Promise<Response>;
 
 // Mount-local lifecycle, not a session cache. Reusing the POST promise survives
 // Strict Mode's setup/cleanup/setup; each real slug mount gets a new coordinator.
-export function createPlacesCoordinator(slug: string, fetcher: FetchPlaces) {
+export function createPlacesCoordinator(slug: string, fetcher: FetchPlaces, initialPlaces: Place[] = []) {
   const path = `/api/destinations/${encodeURIComponent(slug)}`;
   let post: Promise<RefreshResult> | undefined;
   let generation = 0;
   let request = 0;
   let getController: AbortController | undefined;
   let refreshedRoute = false;
-  let state: PlacesState = { places: [], status: "loading" };
+  let state: PlacesState = { places: initialPlaces, status: "loading" };
 
   return {
     mount(onState: (state: PlacesState) => void, refreshRoute: () => void) {

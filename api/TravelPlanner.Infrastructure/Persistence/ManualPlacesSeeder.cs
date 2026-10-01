@@ -115,7 +115,9 @@ public sealed partial class ManualPlacesSeeder(ApplicationDbContext context, IHo
                     var value = property.Value.ValueKind == JsonValueKind.Null ? null : property.Value.GetString();
                     if (value is not null && (string.IsNullOrWhiteSpace(value) || value.Length > 10_000)) throw Invalid($"Neispravna vrijednost: {property.Name}.");
                     if (property.Name == "name" && value is null) throw Invalid("Naziv je obavezan.");
-                    if (property.Name == "category" && value is not ("restaurant" or "attraction")) throw Invalid("Nepoznata kategorija.");
+                    if (property.Name == "category" && value is not ("restaurant" or "cafe" or "attraction" or "museum"
+                        or "viewpoint" or "historic" or "gallery" or "zoo" or "peak" or "waterfall" or "cave"))
+                        throw Invalid("Nepoznata kategorija.");
                     if (property.Name == "priceLevel" && value is not (null or "budget" or "standard" or "premium")) throw Invalid("Nepoznat cjenovni nivo.");
                     if (property.Name is "website" or "imageUrl" or "imageSourceUrl" && value is not null && OverpassPlacesProvider.SafeUrl(value) is null)
                         throw Invalid($"Dozvoljeni su samo HTTP(S) URL-ovi: {property.Name}.");
