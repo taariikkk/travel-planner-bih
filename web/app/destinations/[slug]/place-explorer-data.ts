@@ -22,6 +22,15 @@ export function getPlaceGroup(category: string): Exclude<PlaceGroup, "all"> {
   return CATEGORY_GROUP[category.toLocaleLowerCase("bs")] ?? "attractions";
 }
 
+export function getPlaceMarkerKind(category: string): Exclude<PlaceGroup, "all"> | "other" {
+  // Legacy localized categories share the same visual identity as imported ones.
+  const key = category.toLocaleLowerCase("bs");
+  if (Object.prototype.hasOwnProperty.call(CATEGORY_GROUP, key)) return CATEGORY_GROUP[key];
+  if (key === "restoran") return "restaurants";
+  if (key === "atrakcija") return "attractions";
+  return "other";
+}
+
 export function normalizePlaceSearch(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("bs").trim();
 }

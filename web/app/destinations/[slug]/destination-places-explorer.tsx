@@ -7,6 +7,7 @@ import { useAuth } from "../../components/auth-provider";
 import { text, type Language } from "../../lib/i18n";
 import { useDestinationPlaces } from "./destination-places-context";
 import DestinationMap from "./destination-map";
+import type { MapFocusRequest } from "./map-presentation";
 import { countPlaceGroups, filterPlaces, PLACE_GROUPS, selectBalancedPlaces, sortPlaces, type PlaceGroup } from "./place-explorer-data";
 import type { Destination, Place } from "./types";
 import styles from "./destination.module.css";
@@ -25,6 +26,7 @@ export default function DestinationPlacesExplorer({ destination, token, language
   const deferredQuery = useDeferredValue(query);
   const [group, setGroup] = useState<PlaceGroup>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapFocus, setMapFocus] = useState<MapFocusRequest | null>(null);
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [savedByPlace, setSavedByPlace] = useState<Record<string, string>>({});
   const [savePending, setSavePending] = useState<string | null>(null);
@@ -72,7 +74,11 @@ export default function DestinationPlacesExplorer({ destination, token, language
 
   function openExplorer(placeId: string | undefined, trigger: HTMLButtonElement) {
     triggerRef.current = trigger;
+    // A preview link must reveal its target even if the previous dialog visit
+    // left a different category or search term selected.
+    if (placeId) { setQuery(""); setGroup("all"); }
     setSelectedId(placeId ?? preview[0]?.id ?? null);
+    setMapFocus(placeId ? { placeId, sequence: 0 } : null);
     setMobileView("list");
     setIsOpen(true);
   }
@@ -158,7 +164,7 @@ export default function DestinationPlacesExplorer({ destination, token, language
               const isSelected = selected?.id === place.id;
               const isSaved = Boolean(savedByPlace[place.id]);
               return <li id={`place-result-${place.id}`} key={place.id} className={isSelected ? styles.placeResultSelected : ""}>
-                <button type="button" className={styles.placeResultSummary} aria-expanded={isSelected} onClick={() => setSelectedId(place.id)}>
+                <button type="button" className={styles.placeResultSummary} aria-expanded={isSelected} onClick={() => { setSelectedId(place.id); setMapFocus(current => ({ placeId: place.id, sequence: (current?.sequence ?? 0) + 1 })); }}>
                   <span className={styles.resultIndex} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                   <span><small>{categoryLabel(place, labels.categories)}</small><strong>{place.name}</strong>{place.distanceKm != null ? <em>{explorer.distance(formatDistance(place.distanceKm, language))}</em> : null}</span>
                   <span aria-hidden="true">{isSelected ? "−" : "+"}</span>
@@ -182,7 +188,7 @@ export default function DestinationPlacesExplorer({ destination, token, language
             })}</ul> : <p className={styles.explorerEmpty}>{deferredQuery ? explorer.emptySearch : explorer.emptyFilter}</p>}
           </section>
           <section className={styles.explorerMapPane} aria-label={explorer.map}>
-            <DestinationMap destination={destination} token={token} language={language} places={filtered} selectedPlaceId={selected?.id ?? null} onPlaceSelect={(placeId) => {
+            <DestinationMap destination={destination} token={token} language={language} places={filtered} selectedPlaceId={selected?.id ?? null} focusRequest={mapFocus} onPlaceSelect={(placeId) => {
               setSelectedId(placeId);
               requestAnimationFrame(() => document.getElementById(`place-result-${placeId}`)?.scrollIntoView({ block: "nearest" }));
             }} explorer />
